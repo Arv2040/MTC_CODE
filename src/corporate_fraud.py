@@ -23,10 +23,10 @@ from azure.search.documents.indexes.models import (
     SearchIndex
 )
 import json
+from helpers.Azure_helpers.blobhelp import getdatafromblob, getbloblist, uploaddata
 
 
-
-# CLIENT FOR EMBEDDING
+# CLIENT FOR EMBEDDING - ADA - 002
 client = AzureOpenAI(
     azure_deployment=os.getenv("azure_openai_model_dep_name_em"),
     api_version=os.getenv("azure_openai_version_em"),
@@ -34,11 +34,9 @@ client = AzureOpenAI(
     api_key=os.getenv("azure_openai_key"),
 )
 
-# Getting data from blob storage
+#getting the list of blobbs from the container
+blob_list = getbloblist(os.getenv("CONTAINER_NAME_FRAUD"))
 
-blob_service_client = BlobServiceClient(account_url=f'https://{os.getenv("AZURE_STORAGE_ACCOUNT_NAME")}.blob.core.windows.net', credential=os.getenv("AZURE_STORAGE_ACCOUNT_KEY"))
-container_client = blob_service_client.get_container_client(container=os.getenv("CONTAINER_NAME_FRAUD"))
-blob_list = container_client.list_blobs()
 
 # Creating document intelligence instance
 
@@ -47,12 +45,10 @@ document_client = DocumentAnalysisClient(os.getenv("doc_endpoint"), AzureKeyCred
 # Creating a list of documents
 document_list = []
 for blob in blob_list:
-    if blob.name == 'llminput.json' or blob.name == 'corporate_dataset.json':
+    if blob.name == 'llminputdata.json' or blob.name == 'corporate_dataset.json':
         continue
     
-    blob_client = container_client.get_blob_client(blob.name)
-    downloaded_blob = blob_client.download_blob()
-    pdf_content = downloaded_blob.readall()
+    pdf_content = getdatafromblob(blob.name, os.getenv("CONTAINER_NAME_FRAUD"))
     poller = document_client.begin_analyze_document("prebuilt-document", pdf_content)
     result = poller.result()
     full_text = ""
@@ -61,8 +57,8 @@ for blob in blob_list:
             full_text += line.content + "\n"
     document_list.append(full_text)
 
-with open('./corporate_dataset.json', 'r') as f:
-    data = json.load(f)
+data = getdatafromblob("corporate_dataset.json", os.getenv("CONTAINER_NAME_FRAUD"))
+data = json.loads(data)
 
 #mapped structured and unstructured data
 
@@ -164,14 +160,10 @@ for i, dataitem in enumerate(data):
     dataitem['merchant_id_Vector'] = merchant_id_embeddings[i]
     dataitem['document_text_Vector'] = document_texts_embeddings[i]
     
-#indexing process
-new_blob_name = 'llminput.json'
-new_blob_client = blob_service_client.get_blob_client(container=os.getenv("CONTAINER_NAME_FRAUD"), blob=new_blob_name)
 
 # Open the local file and upload its contents
 data_string = json.dumps(data)
-new_blob_client.upload_blob(data_string, overwrite=True)
-print(f"File {new_blob_name} uplaoded to Azure Blob Storage in container")
+uploaddata('llminputdata.json', os.getenv("CONTAINER_NAME_FRAUD"), data_string)
 
 #defining the vector search algorithm
 vector_search = VectorSearch(
@@ -194,10 +186,8 @@ result = search_client.create_or_update_index(index)
 print(f'{result.name} created')
 
 # Getting the mapped and embedded data from the blob
-blob_client = container_client.get_blob_client('llminput.json')
-blob_data = blob_client.download_blob()
-
-json_data = json.loads(blob_data.readall())
+prefinal_data = getdatafromblob('llminputdata.json', os.getenv("CONTAINER_NAME_FRAUD"))
+json_data = json.loads(prefinal_data)
 
 # Upload the documents to the vector store
 search_client = SearchClient(endpoint=os.getenv("service_endpoint"), index_name=index_name_fraud, credential=AzureKeyCredential(os.getenv("admin_key")))
