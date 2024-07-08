@@ -27,7 +27,7 @@ if 'conversation' not in st.session_state:
 if 'follow_up_response' not in st.session_state:
     st.session_state.follow_up_response = ""
 
-
+index_name = os.getenv("index_name")
 
 col1, col2 = st.columns(2)
 
@@ -37,7 +37,7 @@ blob_list = getbloblist(os.getenv("CONTAINER_NAME"))
 
 
 
-index_name = os.getenv("index_name")
+# index_name = os.getenv("index_name")
 search_client = SearchIndexClient(os.getenv("service_endpoint"), AzureKeyCredential(os.getenv("admin_key")))
 
 
@@ -56,7 +56,8 @@ client = AzureOpenAI(
 search_client = SearchClient(endpoint=os.getenv("service_endpoint"), index_name=index_name, credential=AzureKeyCredential(os.getenv("admin_key")))
 
 #fields to be searched
-fields_string = "cust_id_Vector, serious_dlqin2yrs_Vector, revolving_utilization_of_unsecured_lines_Vector, age_Vector, num_time_30_59_days_past_due_not_worse_Vector, debt_ratio_Vector"
+fields_string = "CustomerID_Vector, SeriousDlqin2yrs_Vector, RevolvingUtilizationOfUnsecuredLines_Vector, age_Vector, NumberOfTime30_59DaysPastDueNotWorse_Vector, DebtRatio_Vector"
+
 
 # Initialize Langchain components
 if st.session_state.conversation is None:
