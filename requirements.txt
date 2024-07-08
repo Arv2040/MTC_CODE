@@ -6,7 +6,7 @@ openai
 azure-storage-blob
 streamlit
 langchain
-langchain_community 
+langchain-community 
 python-dotenv
 
 
