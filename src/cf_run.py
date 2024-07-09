@@ -14,10 +14,11 @@ from helpers.input_helpers.speech import from_mic
 from helpers.Azure_helpers.blobhelp import getdatafromblob,getbloblist,uploaddata
 from helpers.llm_helpers.gpt4o import gpt4oinit,gpt4oresponse
 
+
 load_dotenv()
 
 st.set_page_config(layout="wide")
-st.header("CREDISHIELD: THE CREDIT WORTHINESS COPILOT")
+st.header("CREDISHIELD: THE FRAUD DETECTION COPILOT")
 
 # Initialize session state
 if 'initial_response' not in st.session_state:
@@ -33,7 +34,7 @@ col1, col2 = st.columns(2)
 
 blob_list = getbloblist(os.getenv("CONTAINER_NAME_FRAUD"))
 
-index_name = os.getenv("index_name")
+index_name = os.getenv("index_name_fraud")
 search_client = SearchIndexClient(os.getenv("service_endpoint"), AzureKeyCredential(os.getenv("admin_key")))
 
 
@@ -104,10 +105,10 @@ if query:
     with st.spinner("ANALYSING THE DATA AND GENERATING REPORT"):
        
       
-        prompt = f"This is the search query: {query}, this is the content:{str(context)}  Make a detailed report taking into consideration all the fields and evaluate how creditworthy the customer is. Point out specific details about positives and negatives and how the customer can improve their credit score in order to make their financial journey smooth, tell whether the user is credit worthy or not."
+        prompt = f"This is the search query: {query}, this is the content:{str(context)}  Make a detailed report taking into consideration all the fields and evaluate whether the company is fraud or not. Point out specific details about positives and negatives and why the company is fraud or not."
         
         openaiclient = gpt4oinit()
-        response = gpt4oresponse(openaiclient,prompt,4000,"banking client")
+        response = gpt4oresponse(openaiclient,prompt,4000,"fraud detection expert")
 
         st.session_state.initial_response = response
         # st.write(st.session_state.initial_response)

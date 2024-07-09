@@ -57,8 +57,12 @@ for blob in blob_list:
             full_text += line.content + "\n"
     document_list.append(full_text)
 
-data = getdatafromblob("corporate_dataset.json", os.getenv("CONTAINER_NAME_FRAUD"))
-data = json.loads(data)
+#data = getdatafromblob("corporate_dataset.json", os.getenv("CONTAINER_NAME_FRAUD"))
+#data = json.loads(data)
+
+with open(r"C:\Users\Arush\Desktop\MTC_CODE\Datasets\Fraud_Detection\Structured_Data.json", "r") as f:
+    data = json.load(f)
+#print(data)
 
 #mapped structured and unstructured data
 
@@ -71,95 +75,39 @@ for i in range(1,11,1):
                     customer['document_text'] += document
 
 
-index_name_fraud = os.getenv("index_name_fraud")
+dataitem = data[0]
+data_dict = dict(dataitem)
+key_list = list(data_dict.keys())
 
+#CREATING THE INDEX
+index_name_fraud = os.getenv("index_name_fraud")
 search_client = SearchIndexClient(os.getenv("service_endpoint"),AzureKeyCredential(os.getenv("admin_key")))
+key_list = list(data_dict.keys())
 
 fields = [
-    SearchableField(name="CompanyID", type=SearchFieldDataType.String, key=True, sortable=True, filterable=True, facetable=True),
-    SearchableField(name="Date", type=SearchFieldDataType.String, sortable=True, filterable=True, facetable=True),
-    SearchableField(name="Debit_Credit", type=SearchFieldDataType.String, sortable=True, filterable=True, facetable=True),
-    SearchableField(name="Amount", type=SearchFieldDataType.String, sortable=True, filterable=True, facetable=True),
-    SearchableField(name="CompanyAccount", type=SearchFieldDataType.String, sortable=True, filterable=True, facetable=True),
-    SearchableField(name="TransactionDescription", type=SearchFieldDataType.String, sortable=True, filterable=True, facetable=True),
-    SearchableField(name="FinalBalance", type=SearchFieldDataType.String, sortable=True, filterable=True, facetable=True),
-    SearchableField(name="TransactionID", type=SearchFieldDataType.String, sortable=True, filterable=True, facetable=True),
-    SearchableField(name="MerchantFirmName", type=SearchFieldDataType.String, sortable=True, filterable=True, facetable=True),
-    SearchableField(name="MerchantID", type=SearchFieldDataType.String, sortable=True, filterable=True, facetable=True),
-    SearchableField(name="document_text", type=SearchFieldDataType.String),
-    SearchField(name="company_id_Vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile"),
-    SearchField(name="date_Vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile"),
-    SearchField(name="debit_credit_Vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile"),
-    SearchField(name="amount_Vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile"),
-    SearchField(name="company_account_Vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile"),
-    SearchField(name="transaction_description_Vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile"),
-    SearchField(name="final_balance_Vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile"),
-    SearchField(name="transaction_id_Vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile"),
-    SearchField(name="merchant_firm_name_Vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile"),
-    SearchField(name="merchant_id_Vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile"),
-    SearchField(name="document_text_Vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile"),
+    SearchableField(name=f"{str(key_list[0])}", type=SearchFieldDataType.String, key=True, sortable=True, filterable=True, facetable=True),
 ]
+for i in range(1, len(key_list),1):
+    element = SearchableField(name=f"{str(key_list[i])}", type=SearchFieldDataType.String, sortable=True, filterable=True, facetable=True)
+    fields.append(element)
+for i in range(len(key_list)):
+    element = SearchField(name=f"{str(key_list[i])}_Vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile")
+    fields.append(element)
 
-company_id = [str(dataitem['CompanyID']) for dataitem in data]
-date_new = [str(dataitem['Date']) for dataitem in data]
-debit_credit = [str(dataitem['Debit_Credit']) for dataitem in data]
-amount = [str(dataitem['Amount']) for dataitem in data]
-company_account = [str(dataitem['CompanyAccount']) for dataitem in data]
-transaction_description = [str(dataitem['TransactionDescription']) for dataitem in data]
-final_balance = [str(dataitem['FinalBalance']) for dataitem in data]
-transaction_id = [str(dataitem['TransactionID']) for dataitem in data]
-merchant_firm_name = [str(dataitem['MerchantFirmName']) for dataitem in data]
-merchant_id = [str(dataitem['MerchantID']) for dataitem in data]
-document_texts = [str(dataitem['document_text']) for dataitem in data]
+names_lists = []
+response_lists = []
+embedding_lists = []
+for i in range(len(key_list)):
+    names_list = [str(dataitem[f'{key_list[i]}']) for dataitem in data]
+    response_list = client.embeddings.create(input=names_list, model = os.getenv("azure_openai_em_name"))
+    embedding_list = [item.embedding for item in response_list.data]
+    names_lists.append(names_list)
+    response_lists.append(response_list)
+    embedding_lists.append(embedding_list)
 
-# Creating embeddings
-company_id_response = client.embeddings.create(input=company_id, model=os.getenv("azure_openai_em_name"))
-company_id_embeddings = [item.embedding for item in company_id_response.data]
-
-date_response = client.embeddings.create(input=date_new, model=os.getenv("azure_openai_em_name"))
-date_embeddings = [item.embedding for item in date_response.data]
-
-debit_credit_response = client.embeddings.create(input=debit_credit, model=os.getenv("azure_openai_em_name"))
-debit_credit_embeddings = [item.embedding for item in debit_credit_response.data]
-
-amount_response = client.embeddings.create(input=amount, model=os.getenv("azure_openai_em_name"))
-amount_embeddings = [item.embedding for item in amount_response.data]
-
-company_account_response = client.embeddings.create(input=company_account, model=os.getenv("azure_openai_em_name"))
-company_account_embeddings = [item.embedding for item in company_account_response.data]
-
-transaction_description_response = client.embeddings.create(input=transaction_description, model=os.getenv("azure_openai_em_name"))
-transaction_description_embeddings = [item.embedding for item in transaction_description_response.data]
-
-final_balance_response = client.embeddings.create(input=final_balance, model=os.getenv("azure_openai_em_name"))
-final_balance_embeddings = [item.embedding for item in final_balance_response.data]
-
-transaction_id_response = client.embeddings.create(input=transaction_id, model=os.getenv("azure_openai_em_name"))
-transaction_id_embeddings = [item.embedding for item in transaction_id_response.data]
-
-merchant_firm_name_response = client.embeddings.create(input=merchant_firm_name, model=os.getenv("azure_openai_em_name"))
-merchant_firm_name_embeddings = [item.embedding for item in merchant_firm_name_response.data]
-
-merchant_id_response = client.embeddings.create(input=merchant_id, model=os.getenv("azure_openai_em_name"))
-merchant_id_embeddings = [item.embedding for item in merchant_id_response.data]
-
-document_texts_response = client.embeddings.create(input=document_texts, model=os.getenv("azure_openai_em_name"))
-document_texts_embeddings = [item.embedding for item in document_texts_response.data]
-
-# Adding the vectors to each data item in the data
 for i, dataitem in enumerate(data):
-    dataitem['company_id_Vector'] = company_id_embeddings[i]
-    dataitem['date_Vector'] = date_embeddings[i]
-    dataitem['debit_credit_Vector'] = debit_credit_embeddings[i]
-    dataitem['amount_Vector'] = amount_embeddings[i]
-    dataitem['company_account_Vector'] = company_account_embeddings[i]
-    dataitem['transaction_description_Vector'] = transaction_description_embeddings[i]
-    dataitem['final_balance_Vector'] = final_balance_embeddings[i]
-    dataitem['transaction_id_Vector'] = transaction_id_embeddings[i]
-    dataitem['merchant_firm_name_Vector'] = merchant_firm_name_embeddings[i]
-    dataitem['merchant_id_Vector'] = merchant_id_embeddings[i]
-    dataitem['document_text_Vector'] = document_texts_embeddings[i]
-    
+    for j, key in enumerate(key_list):
+        dataitem[f'{key}_Vector'] = embedding_lists[j][i]
 
 # Open the local file and upload its contents
 data_string = json.dumps(data)
@@ -194,6 +142,7 @@ search_client = SearchClient(endpoint=os.getenv("service_endpoint"), index_name=
 results = search_client.upload_documents(json_data)
 print(f"Uploaded {len(json_data)} documents")
 
+'''
 # Function to vectorize the prompt
 field_string = "company_id_Vector, final_balance_Vector, transaction_id_Vector, merchant_firm_name_Vector, merchant_id_Vector, document_text_Vector"
 
@@ -254,4 +203,4 @@ if context:
     print(response.choices[0].message.content)
 else:
     print("Unable to proceed with OpenAI analysis due to lack of search results.")
-
+'''
