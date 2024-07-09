@@ -57,12 +57,8 @@ for blob in blob_list:
             full_text += line.content + "\n"
     document_list.append(full_text)
 
-#data = getdatafromblob("corporate_dataset.json", os.getenv("CONTAINER_NAME_FRAUD"))
-#data = json.loads(data)
-
-with open(r"C:\Users\Arush\Desktop\MTC_CODE\Datasets\Fraud_Detection\Structured_Data.json", "r") as f:
-    data = json.load(f)
-#print(data)
+data = getdatafromblob("corporate_dataset.json", os.getenv("CONTAINER_NAME_FRAUD"))
+data = json.loads(data)
 
 #mapped structured and unstructured data
 
@@ -80,7 +76,7 @@ data_dict = dict(dataitem)
 key_list = list(data_dict.keys())
 
 #CREATING THE INDEX
-index_name_fraud = os.getenv("index_name_fraud")
+index_name_fraud = os.getenv("corporate-index9")
 search_client = SearchIndexClient(os.getenv("service_endpoint"),AzureKeyCredential(os.getenv("admin_key")))
 key_list = list(data_dict.keys())
 
@@ -129,7 +125,7 @@ vector_search = VectorSearch(
 )
 
 # Create the search index and defining the algorithm we previously created
-index = SearchIndex(name=index_name_fraud, fields=fields, vector_search=vector_search)
+index = SearchIndex(name="corporate-index9", fields=fields, vector_search=vector_search)
 result = search_client.create_or_update_index(index)
 print(f'{result.name} created')
 
@@ -138,69 +134,54 @@ prefinal_data = getdatafromblob('llminputdata.json', os.getenv("CONTAINER_NAME_F
 json_data = json.loads(prefinal_data)
 
 # Upload the documents to the vector store
-search_client = SearchClient(endpoint=os.getenv("service_endpoint"), index_name=index_name_fraud, credential=AzureKeyCredential(os.getenv("admin_key")))
+search_client = SearchClient(endpoint=os.getenv("service_endpoint"), index_name="corporate-index9", credential=AzureKeyCredential(os.getenv("admin_key")))
 results = search_client.upload_documents(json_data)
 print(f"Uploaded {len(json_data)} documents")
 
 '''
-# Function to vectorize the prompt
-field_string = "company_id_Vector, final_balance_Vector, transaction_id_Vector, merchant_firm_name_Vector, merchant_id_Vector, document_text_Vector"
+# TESTING IF I CAN READ THE CONTENTS OF THE DATASET FOLDER
+import os
+from PIL import Image
 
-query = "Provide all the details of CompanyID: 1 transactions"
+main_folder_path = r"C:\Users\Arush\Desktop\MTC_CODE\Datasets"
 
-def get_embedding(query):
-    embedding = client.embeddings.create(input=query, model=os.getenv("azure_openai_em_name")).data[0].embedding
-    vector_query = VectorizedQuery(vector=embedding, k_nearest_neighbors=3, fields=field_string)
-    return vector_query
+# Walk through the directory
+for root, dirs, files in os.walk(main_folder_path):
+    print(f"Folder: {root}")
+    
+    image_file = None
+    text_file = None
+    
+    # Identify image and text files
+    for file in files:
+        file_path = os.path.join(root, file)
+        file_extension = os.path.splitext(file)[1].lower()
+        
+        if file_extension in ['.jpg', '.jpeg', '.png', '.gif']:
+            image_file = file_path
+        elif file_extension == '.txt':
+            text_file = file_path
+    
+    # Process image file
+    if image_file:
+        print(f"  Image: {os.path.basename(image_file)}")
+        try:
+            with Image.open(image_file) as img:
+                width, height = img.size
+                print(f"    Dimensions: {width}x{height}")
+                print(f"    Format: {img.format}")
+        except Exception as e:
+            print(f"    Error processing image: {str(e)}")
+    
+    # Process text file
+    if text_file:
+        print(f"  Text: {os.path.basename(text_file)}")
+        try:
+            with open(text_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+                print(f"    Content: {content}...")
+        except Exception as e:
+            print(f"    Error reading text file: {str(e)}")
 
-content = get_embedding(query)
-
-select = [
-    "CompanyID",
-    "Date",
-    "Debit_Credit",
-    "Amount",
-    "CompanyAccount",
-    "TransactionDescription",
-    "FinalBalance",
-    "TransactionID",
-    "MerchantFirmName",
-    "MerchantID",
-    "document_text"
-]
-
-results = search_client.search(
-    search_text=None,
-    vector_queries=[content],
-    select=select
-  
-)
-try:
-    context = next(results)
-    print("Search results found. Proceeding with analysis.")
-except StopIteration:
-    print("No search results found. The query didn't match any documents.")
-    context = None
-
-if context:
-   
-
-    client = AzureOpenAI(
-        api_key = os.getenv("api_key"),
-        api_version =os.getenv("api_version") ,
-        azure_endpoint=os.getenv("azure_endpoint")
-    )
-
-    response = client.chat.completions.create(
-        model=os.getenv("deployment_name"),
-        messages=[
-            {"role": "system", "content": "You are an expert financial specializing in corporate fraud detection."},
-            {"role": "user", "content": f"This is the search query: {query}, this is the content: {context}. Based on the transaction data and company information provide a detailed report on the potential fraud indicators and overall financial health. Also show the document text not the vector, just the text in that object. give a detailed explanation of document text."}
-        ],
-        max_tokens=4000
-    )
-
-    print(response.choices[0].message.content)
-else:
-    print("Unable to proceed with OpenAI analysis due to lack of search results.")
+print("Done processing all folders and files.")
 '''
