@@ -12,3 +12,4 @@ It leverages cutting-edge technologies like Generative AI and Retrieval Augmente
 
 <img width="861" alt="Screenshot 2024-07-09 at 6 36 21 PM" src="https://github.com/Arv2040/MTC_CODE/assets/34931141/05a795bf-7b38-4c08-853d-2031c2f37ef7">
 
+The system also leverages the capabilities of LangChain to maintain a conversational interface in the form of a **Copilot** which keeps context of previous queries and can be used to repeatedly reason on top of the report which the system has originally generated.
