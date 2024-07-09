@@ -32,11 +32,11 @@ To perform the indexing of vector data for Fraud Detection and execute the RAG o
 ```
 python cf_vector.py
 ```
-To run the frontend module for Creditworthiness, run the following command:
+To execute the frontend module for Creditworthiness, run the following command:
 ```
 streamlit run cw_run.py
 ```
-To run the frontend module for Fraud Detection, run the following command:
+To execute the frontend module for Fraud Detection, run the following command:
 ```
 streamlit run cf_run.py
 ```
