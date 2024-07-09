@@ -1,0 +1,128 @@
+[
+  {
+    "CompanyID": "1A",
+    "Date": "2024-04-28",
+    "Debit_Credit": "credit",
+    "Amount": "$1,872.20",
+    "CompanyAccount": "GB08ROGD29643944306723",
+    "TransactionDescription": "repurpose ubiquitous convergence",
+    "FinalBalance": "$661,348.03",
+    "TransactionID": "TID031",
+    "MerchantFirmName": "Valdez, Jones and Juarez",
+    "MerchantID": "MID021",
+    "Collateral": "a modern, five-story office building with large glass windows,  situated in an urban area"
+  }, 
+  {
+    "CompanyID": "2A",
+    "Date": "2023-08-19",
+    "Debit_Credit": "debit",
+    "Amount": "$2,949.75",
+    "CompanyAccount": "GB89MABS47891573073500",
+    "TransactionDescription": "transition cross-media models",
+    "FinalBalance": "$663,471.37",
+    "TransactionID": "TID032",
+    "MerchantFirmName": "Long, Dawson and Walsh",
+    "MerchantID": "MID022",
+    "Collateral": "a modern two-storey house with large glass windows, and a rectangular swimming pool"
+
+  },
+  {
+    "CompanyID": "3A",
+    "Date": "2024-04-08",
+    "Debit_Credit": "credit",
+    "Amount": "$2,056.96",
+    "CompanyAccount": "GB16IPNZ52952359540546",
+    "TransactionDescription": "drive back-end mindshare",
+    "FinalBalance": "$661,056.73",
+    "TransactionID": "TID033",
+    "MerchantFirmName": "Miranda, Wright and Duncan",
+    "MerchantID": "MID023",
+    "Collateral": "5 storey apartment building in Pashchim Vihar, New Delhi"
+  },
+  {
+    "CompanyID": "4A",
+    "Date": "2024-04-29",
+    "Debit_Credit": "debit",
+    "Amount": "$3,612.95",
+    "CompanyAccount": "GB55KFPN86471294008198",
+    "TransactionDescription": "monetize collaborative functionalities",
+    "FinalBalance": "$661,970.96",
+    "TransactionID": "TID034",
+    "MerchantFirmName": "Foster-Chen",
+    "MerchantID": "MID024",
+    "Collateral": "2024 MG Hector Plus with 500 miles"
+  },
+  {
+    "CompanyID": "5A",
+    "Date": "2024-04-22",
+    "Debit_Credit": "debit",
+    "Amount": "$2,794.21",
+    "CompanyAccount": "GB81TWDV49068869053340",
+    "TransactionDescription": "integrate viral ROI",
+    "FinalBalance": "$666,054.70",
+    "TransactionID": "TID035",
+    "MerchantFirmName": "Kim LLC",
+    "MerchantID": "MID025",
+    "Collateral": "10 acre farmland in Mysore, Karnataka"
+  },
+  {
+    "CompanyID": "6",
+    "Date": "2024-02-20",
+    "Debit_Credit": "debit",
+    "Amount": "$2,736.52",
+    "CompanyAccount": "GB63RGIR74454405580485",
+    "TransactionDescription": "engage vertical deliverables",
+    "FinalBalance": "$663,364.62",
+    "TransactionID": "TID036",
+    "MerchantFirmName": "Brooks-Huff",
+    "MerchantID": "MID026"
+  },
+  {
+    "CompanyID": "7",
+    "Date": "2023-07-31",
+    "Debit_Credit": "debit",
+    "Amount": "$4,513.46",
+    "CompanyAccount": "GB10XRAC71200883486692",
+    "TransactionDescription": "streamline next-generation metrics",
+    "FinalBalance": "$665,672.69",
+    "TransactionID": "TID037",
+    "MerchantFirmName": "Baker Ltd",
+    "MerchantID": "MID027"
+  },
+  {
+    "CompanyID": "8",
+    "Date": "2023-08-11",
+    "Debit_Credit": "credit",
+    "Amount": "$3,957.75",
+    "CompanyAccount": "GB80FQFO23782135823250",
+    "TransactionDescription": "harness ubiquitous e-markets",
+    "FinalBalance": "$663,694.19",
+    "TransactionID": "TID038",
+    "MerchantFirmName": "Hunter, Johnson and Robinson",
+    "MerchantID": "MID028"
+  },
+  {
+    "CompanyID": "9",
+    "Date": "2023-12-08",
+    "Debit_Credit": "credit",
+    "Amount": "$4,057.91",
+    "CompanyAccount": "GB57QKVN61678089130135",
+    "TransactionDescription": "implement end-to-end functionalities",
+    "FinalBalance": "$662,145.08",
+    "TransactionID": "TID039",
+    "MerchantFirmName": "Burke, Sherman and Thompson",
+    "MerchantID": "MID029"
+  },
+  {
+    "CompanyID": "10",
+    "Date": "2024-06-29",
+    "Debit_Credit": "credit",
+    "Amount": "$4,366.29",
+    "CompanyAccount": "GB42PTCE06685981966076",
+    "TransactionDescription": "enhance extensible models",
+    "FinalBalance": "$661,352.17",
+    "TransactionID": "TID040",
+    "MerchantFirmName": "Koch LLC",
+    "MerchantID": "MID030"
+  }
+]
