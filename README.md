@@ -15,3 +15,28 @@ It leverages cutting-edge technologies like Generative AI and Retrieval Augmente
 The system also leverages the capabilities of LangChain to maintain a conversational interface in the form of a **Copilot** which keeps context of previous queries and can be used to repeatedly reason on top of the report which the system has originally generated.
 
 Multilingual and Voice inputs are also key features of the system which distinguish it from other mainstream solutions.
+
+## To run the code on your system
+
+Clone this repository into your IDE.
+
+Install the dependencies for the code to execute effectively.
+```
+pip install -r requirements.txt
+```
+To perform the indexing of vector data for Creditworthiness and execute the RAG on it, run the following command:
+```
+python cw_vector.py
+```
+To perform the indexing of vector data for Fraud Detection and execute the RAG on it, run the following command:
+```
+python cf_vector.py
+```
+To run the frontend module for Creditworthiness, run the following command:
+```
+streamlit run cw_run.py
+```
+To run the frontend module for Fraud Detection, run the following command:
+```
+streamlit run cf_run.py
+```
