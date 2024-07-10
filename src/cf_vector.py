@@ -35,7 +35,7 @@ client = AzureOpenAI(
 )
 # very very important code here-------------- dont touch---------
 document_client = DocumentAnalysisClient(os.getenv("doc_endpoint"), AzureKeyCredential(os.getenv("doc_apikey")))
-# main_folder_path = r"your path"
+main_folder_path = r"C:\Users\A J\Desktop\MTC_CODE\Datasets"
 fraud_detection_folder = os.path.join(main_folder_path, "Fraud_Detection")
 fraud_directory = next(os.walk(fraud_detection_folder))
 current_directory, directories, files = fraud_directory
@@ -92,12 +92,16 @@ for i in range(len(d)):
     for document_array in document_text_final:
         for document in document_array:
             element['document_text'] += document
+            break
     for image_array in image_final:
         for image in image_array:
             element['images'] += f"{image},"
+            break
     for text_array in text_final:
         for text in text_array:
             element['txt_text'] += text 
+            break
+    
 # d = json.dumps(d)
 # uploaddata("checkthis.json","unstructureddata",d)
         # if f"CompanyID = {str(i)}" in document:
