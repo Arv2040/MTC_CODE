@@ -13,6 +13,8 @@ from helpers.vector_helpers.getembedding import get_embedding
 from helpers.input_helpers.speech import from_mic
 from helpers.Azure_helpers.blobhelp import getdatafromblob,getbloblist,uploaddata
 from helpers.llm_helpers.gpt4o import gpt4oinit,gpt4oresponse
+from azure.search.documents.models import QueryType, QueryCaptionType, QueryAnswerType
+
 
 load_dotenv()
 
@@ -101,24 +103,25 @@ if query:
     results = search_client.search(
         search_text=None,
         vector_queries=[content],
-        select=select
+        select=select,
+        query_type=QueryType.SEMANTIC, semantic_configuration_name='customer-semantic-config', query_caption=QueryCaptionType.EXTRACTIVE, query_answer=QueryAnswerType.EXTRACTIVE,
+        top = 3
     )
-
     context = next(results)
-
-    with st.spinner("ANALYSING THE DATA AND GENERATING REPORT"):
-       
+    semantic_answers = results.get_answers()
+    print(semantic_answers)
+    
       
-        prompt = f"This is the search query: {query}, this is the content:{str(context)}  Make a detailed report taking into consideration all the fields and evaluate how creditworthy the customer is. Point out specific details about positives and negatives and how the customer can improve their credit score in order to make their financial journey smooth, tell whether the user is credit worthy or not."
+    prompt = f"This is the search query: {query}, this is the content:{str(context)}  Make a detailed report taking into consideration all the fields and evaluate how creditworthy the customer is. Point out specific details about positives and negatives and how the customer can improve their credit score in order to make their financial journey smooth, tell whether the user is credit worthy or not."
         
-        openaiclient = gpt4oinit()
-        response = gpt4oresponse(openaiclient,prompt,4000,"banking client")
+    openaiclient = gpt4oinit()
+    response = gpt4oresponse(openaiclient,prompt,4000,"banking client")
 
-        st.session_state.initial_response = response
+    st.session_state.initial_response = response
         # st.write(st.session_state.initial_response)
 
         # Add the initial interaction to Langchain memory
-        st.session_state.conversation.predict(input=f"User: {query}\nAI: {st.session_state.initial_response}")
+    st.session_state.conversation.predict(input=f"User: {query}\nAI: {st.session_state.initial_response}")
 
         
 
