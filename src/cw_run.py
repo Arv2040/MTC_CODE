@@ -90,8 +90,11 @@ else:
 
 if query:
     st.write(f"Your query is: {query}")
-   
-    content = get_embedding(query,"CustomerID_Vector",client)
+    prompt = f"This is the customer id {query}, please return it to be in this format - CustomerID: i, where I can be the number provided by the query.Do not give anything else in the response, just give CustomerID: i."
+    enricher = gpt4oinit()
+    newquery = gpt4oresponse(enricher,prompt,20,"give direct answers")
+    st.write(f"Target - {newquery}")
+    content = get_embedding(newquery,"CustomerID_Vector",client)
 
     
     select = [
@@ -107,9 +110,13 @@ if query:
         query_type=QueryType.SEMANTIC, semantic_configuration_name='customer-semantic-config', query_caption=QueryCaptionType.EXTRACTIVE, query_answer=QueryAnswerType.EXTRACTIVE,
         top = 3
     )
-    context = next(results)
-    semantic_answers = results.get_answers()
-    print(semantic_answers)
+    # context = next(results)
+    # semantic_answers = results.get_answers()
+    # print(semantic_answers)
+    context = ""
+    for result in results:
+        if newquery  ==  result['CustomerID']:
+            context = newquery
     
       
     prompt = f"This is the search query: {query}, this is the content:{str(context)}  Make a detailed report taking into consideration all the fields and evaluate how creditworthy the customer is. Point out specific details about positives and negatives and how the customer can improve their credit score in order to make their financial journey smooth, tell whether the user is credit worthy or not."
