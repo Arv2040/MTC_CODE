@@ -101,14 +101,7 @@ for i in range(len(d)):
         for text in text_array:
             element['txt_text'] += text 
             break
-    
-# d = json.dumps(d)
-# uploaddata("checkthis.json","unstructureddata",d)
-        # if f"CompanyID = {str(i)}" in document:
-        #     for customer in data:
-        #         customer['document_text'] = "a"
-        #         if(customer['CompanyID'] == str(i)):
-        #             customer['document_text'] += document
+
 data = d
 print("done")
 
@@ -134,41 +127,6 @@ print("done")
 
 
 
-
-#getting the list of blobs from the container
-# blob_list = getbloblist(os.getenv("CONTAINER_NAME_FRAUD"))
-
-
-# Creating document intelligence instance
-
-# document_client = DocumentAnalysisClient(os.getenv("doc_endpoint"), AzureKeyCredential(os.getenv("doc_apikey")))
-
-# # Creating a list of documents
-# document_list = []
-# for blob in blob_list:
-    
-    
-#     pdf_content = getdatafromblob(blob.name, os.getenv("CONTAINER_NAME_FRAUD"))
-#     poller = document_client.begin_analyze_document("prebuilt-document", pdf_content)
-#     result = poller.result()
-#     full_text = ""
-#     for page in result.pages:
-#         for line in page.lines:
-#             full_text += line.content + "\n"
-#     document_list.append(full_text)
-
-# data = getdatafromblob("corporate_dataset.json", os.getenv("CONTAINER_NAME_FRAUD"))
-
-
-# #mapped structured and unstructured data
-
-# for i in range(1,11,1):
-#     for document in document_list:
-#         if f"CompanyID = {str(i)}" in document:
-#             for customer in data:
-#                 customer['document_text'] = "a"
-#                 if(customer['CompanyID'] == str(i)):
-#                     customer['document_text'] += document
 
 
 dataitem = data[0]
