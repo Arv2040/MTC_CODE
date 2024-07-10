@@ -15,7 +15,7 @@
   }, 
   {
     "CompanyID": "100002",
-    "CompanyName": "XYZ Enterprise",
+    "CompanyName": "XYZ Pharmaceuticals",
     "Date": "2023-08-19",
     "Debit_Credit": "Debit",
     "Amount": "$2,949.75",
@@ -30,7 +30,7 @@
   },
   {
     "CompanyID": "100003",
-    "CompanyName": "Global Finance", 
+    "CompanyName": "PQR Motors", 
     "Date": "2024-04-08",
     "Debit_Credit": "Credit",
     "Amount": "$7,056.96",
@@ -44,7 +44,7 @@
   },
   {
     "CompanyID": "100004",
-    "CompanyName": "MegaCorp Ltd",
+    "CompanyName": "LMN Technologies",
     "Date": "2024-04-29",
     "Debit_Credit": "Debit",
     "Amount": "$3,612.95",
@@ -58,7 +58,7 @@
   },
   {
     "CompanyID": "100005",
-    "CompanyName": "Alpha Holdings",
+    "CompanyName": "DEF Manufacturing",
     "Date": "2024-04-22",
     "Debit_Credit": "Credit",
     "Amount": "$2,794.21",
