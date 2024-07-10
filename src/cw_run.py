@@ -91,7 +91,7 @@ else:
 if query:
     st.write(f"Your query is: {query}")
    
-    content = get_embedding(query,fields_string,client)
+    content = get_embedding(query,"CustomerID_Vector",client)
 
     
     select = [

@@ -53,7 +53,7 @@ client = AzureOpenAI(
 search_client = SearchClient(endpoint=os.getenv("service_endpoint"), index_name=index_name, credential=AzureKeyCredential(os.getenv("admin_key")))
 
 # Function to vectorize the prompt
-field_string = "company_id_Vector, final_balance_Vector, transaction_id_Vector, merchant_firm_name_Vector, merchant_id_Vector, document_text_Vector"
+field_string = "company_id_Vector"
 
 # Initialize Langchain components
 if st.session_state.conversation is None:
