@@ -115,8 +115,9 @@ if query:
     # print(semantic_answers)
     context = ""
     for result in results:
-        if newquery  ==  result['CustomerID']:
-            context = newquery
+        if newquery[-1] == result['CustomerID']:
+            context = result
+            
     
       
     prompt = f"This is the search query: {query}, this is the content:{str(context)}  Make a detailed report taking into consideration all the fields and evaluate how creditworthy the customer is. Point out specific details about positives and negatives and how the customer can improve their credit score in order to make their financial journey smooth, tell whether the user is credit worthy or not."
