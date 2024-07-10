@@ -1,4 +1,4 @@
-from langchain.chat_models import AzureChatOpenAI
+from langchain_openai import AzureChatOpenAI
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -9,3 +9,4 @@ def createlangchainllm():
         azure_endpoint=os.getenv("azure_endpoint"),
         deployment_name = os.getenv("deployment_name")
     )
+

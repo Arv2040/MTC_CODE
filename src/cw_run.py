@@ -90,7 +90,7 @@ else:
 
 if query:
     st.write(f"Your query is: {query}")
-    prompt = f"This is the customer id {query}, please return it to be in this format - CustomerID: i, where I can be the number provided by the query.Do not give anything else in the response, just give CustomerID: i."
+    prompt = f"This is the customer id {query}, please return it to be in this format - CustomerID: i, where i can be the number provided by the query.Do not give anything else in the response, just give CustomerID: i."
     enricher = gpt4oinit()
     newquery = gpt4oresponse(enricher,prompt,20,"give direct answers")
     st.write(f"Target - {newquery}")
@@ -113,6 +113,7 @@ if query:
     # semantic_answers = results.get_answers()
     # print(semantic_answers)
     context = ""
+    
     for result in results:
        
         if newquery[-1] == result['CustomerID']:

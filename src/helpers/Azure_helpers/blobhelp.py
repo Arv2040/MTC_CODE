@@ -25,3 +25,6 @@ def uploaddata(newblobname,containername,data):
     
     print(f"File {newblobname} uploaded to Azure Blob Storage in container")
 
+def createcontainer(containername):
+    container_client = blob_service_client.create_container(container = containername)
+    return container_client
