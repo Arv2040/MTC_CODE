@@ -107,8 +107,7 @@ if query:
         search_text=None,
         vector_queries=[content],
         select=select,
-        query_type=QueryType.SEMANTIC, semantic_configuration_name='customer-semantic-config', query_caption=QueryCaptionType.EXTRACTIVE, query_answer=QueryAnswerType.EXTRACTIVE,
-        top = 3
+       
     )
     # context = next(results)
     # semantic_answers = results.get_answers()

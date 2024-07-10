@@ -95,7 +95,7 @@ index_name = os.getenv("index_name")
 search_client = SearchIndexClient(os.getenv("service_endpoint"),AzureKeyCredential(os.getenv("admin_key")))
 key_list = list(data_dict.keys())
 
-    
+
 
 
 #FIELD SCHEMA FOR THE DATA STORED IN THE INDEX
@@ -149,49 +149,49 @@ vector_search = VectorSearch(
         )
     ]
 )
-semantic_config = SemanticConfiguration(
-    name="customer-semantic-config",
-    prioritized_fields=SemanticPrioritizedFields(
-        title_field=SemanticField(field_name="CustomerID"),
-        keywords_fields=[
-            SemanticField(field_name="SeriousDlqin2yrs"),
-            SemanticField(field_name="RevolvingUtilizationOfUnsecuredLines"),
-            SemanticField(field_name="age"),
-            SemanticField(field_name="NumberOfTime30_59DaysPastDueNotWorse"),
-            SemanticField(field_name="DebtRatio"),
-            SemanticField(field_name="MonthlyIncome"),
-            SemanticField(field_name="NumberOfOpenCreditLinesAndLoans"),
-            SemanticField(field_name="NumberOfTimes90DaysLate"),
-            SemanticField(field_name="NumberRealEstateLoansOrLines"),
-            SemanticField(field_name="NumberOfTime60_89DaysPastDueNotWorse"),
-            SemanticField(field_name="NumberOfDependents"),
-            SemanticField(field_name="CreditScore"),
-            SemanticField(field_name="CreditHistoryLength"),
-            SemanticField(field_name="PaymentHistoryScore"),
-            SemanticField(field_name="LTV"),
-            SemanticField(field_name="TotalAssets"),
-            SemanticField(field_name="TotalLiabilities"),
-            SemanticField(field_name="EmploymentStatus_Retired"),
-            SemanticField(field_name="EmploymentStatus_Student"),
-            SemanticField(field_name="EmploymentStatus_Unemployed"),
-            SemanticField(field_name="EducationLevel_Bachelor_Degree"),
-            SemanticField(field_name="EducationLevel_High_School"),
-            SemanticField(field_name="EducationLevel_Master_Degree"),
-            SemanticField(field_name="EducationLevel_PhD")
-        ],
-        content_fields=[
-            SemanticField(field_name="CustomerFeedback"),
-            SemanticField(field_name="CustomerServiceLog"),
-            SemanticField(field_name="FeedbackSentimentScore"),
-            SemanticField(field_name="ServiceLogSentimentScore"),
-            SemanticField(field_name="document_text")
-        ]
-    )
-)
+# semantic_config = SemanticConfiguration(
+#     name="customer-semantic-config",
+#     prioritized_fields=SemanticPrioritizedFields(
+#         title_field=SemanticField(field_name="CustomerID"),
+#         keywords_fields=[
+#             SemanticField(field_name="SeriousDlqin2yrs"),
+#             SemanticField(field_name="RevolvingUtilizationOfUnsecuredLines"),
+#             SemanticField(field_name="age"),
+#             SemanticField(field_name="NumberOfTime30_59DaysPastDueNotWorse"),
+#             SemanticField(field_name="DebtRatio"),
+#             SemanticField(field_name="MonthlyIncome"),
+#             SemanticField(field_name="NumberOfOpenCreditLinesAndLoans"),
+#             SemanticField(field_name="NumberOfTimes90DaysLate"),
+#             SemanticField(field_name="NumberRealEstateLoansOrLines"),
+#             SemanticField(field_name="NumberOfTime60_89DaysPastDueNotWorse"),
+#             SemanticField(field_name="NumberOfDependents"),
+#             SemanticField(field_name="CreditScore"),
+#             SemanticField(field_name="CreditHistoryLength"),
+#             SemanticField(field_name="PaymentHistoryScore"),
+#             SemanticField(field_name="LTV"),
+#             SemanticField(field_name="TotalAssets"),
+#             SemanticField(field_name="TotalLiabilities"),
+#             SemanticField(field_name="EmploymentStatus_Retired"),
+#             SemanticField(field_name="EmploymentStatus_Student"),
+#             SemanticField(field_name="EmploymentStatus_Unemployed"),
+#             SemanticField(field_name="EducationLevel_Bachelor_Degree"),
+#             SemanticField(field_name="EducationLevel_High_School"),
+#             SemanticField(field_name="EducationLevel_Master_Degree"),
+#             SemanticField(field_name="EducationLevel_PhD")
+#         ],
+#         content_fields=[
+#             SemanticField(field_name="CustomerFeedback"),
+#             SemanticField(field_name="CustomerServiceLog"),
+#             SemanticField(field_name="FeedbackSentimentScore"),
+#             SemanticField(field_name="ServiceLogSentimentScore"),
+#             SemanticField(field_name="document_text")
+#         ]
+#     )
+# )
 
 
 
-semantic_search = SemanticSearch(configurations=[semantic_config])
+# semantic_search = SemanticSearch(configurations=[semantic_config])
 # Create the search index and defining the algorithm we previously created
 index = SearchIndex(name=index_name, fields=fields,
                     vector_search=vector_search)
