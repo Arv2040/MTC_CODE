@@ -33,14 +33,54 @@ client = AzureOpenAI(
     azure_endpoint=os.getenv("ADA_ENDPOINT"),
     api_key=os.getenv("azure_openai_key"),
 )
-
+# very very important code here-------------- dont touch---------
+document_client = DocumentAnalysisClient(os.getenv("doc_endpoint"), AzureKeyCredential(os.getenv("doc_apikey")))
 main_folder_path = r"C:\Users\A J\Desktop\MTC_CODE\Datasets"
-for root, dirs, files in os.walk(main_folder_path):
-    print(f"Folder: {root}")
-    for dir in dirs:
-        createcontainer(dir)
-       
+fraud_detection_folder = os.path.join(main_folder_path, "Fraud_Detection")
+fraud_directory = next(os.walk(fraud_detection_folder))
+current_directory, directories, files = fraud_directory
+entries = os.listdir(fraud_detection_folder)
+for dir in entries:
+#    createcontainer((dir))
+    sub_dir_path = os.path.join(fraud_detection_folder,dir)
+    for root,dirs,files in os.walk(sub_dir_path):
+        for file in files:
+            with open(sub_dir_path,"rb") as data:
+                uploaddata(file,dir,data)
+        break
+    blob_list = getbloblist(dir)
+    print(blob_list)
+    document_text_list = []
+    image_list = []
+    text_list = []
+   
+    for blob in blob_list:
+        if '.jpg' in blob.name or '.jpeg' in blob.name or '.png' in blob.name:
+            image_content = getdatafromblob(blob.name,dir)
+            image_list.append(image_content)
+        elif '.pdf' in blob.name:
+            
         
+            pdf_content = getdatafromblob(blob.name, dir)
+            poller = document_client.begin_analyze_document("prebuilt-document", pdf_content)
+            result = poller.result()
+            full_text = ""
+            for page in result.pages:
+                for line in page.lines:
+                    full_text += line.content + "\n"
+            document_text_list.append(full_text)
+        else:
+            text_content = getdatafromblob(blob.name,dir)
+            text_list.append(text_content)
+#------------------------------------------------------------------
+
+
+
+
+
+# for dir in directories:
+#    directory_path = os.path.join(fraud_detection_folder, dir)
+    
     # image_file = None
     # text_file = None
     
@@ -60,7 +100,7 @@ for root, dirs, files in os.walk(main_folder_path):
 
 
 #getting the list of blobs from the container
-blob_list = getbloblist(os.getenv("CONTAINER_NAME_FRAUD"))
+# blob_list = getbloblist(os.getenv("CONTAINER_NAME_FRAUD"))
 
 
 # Creating document intelligence instance
@@ -70,8 +110,7 @@ blob_list = getbloblist(os.getenv("CONTAINER_NAME_FRAUD"))
 # # Creating a list of documents
 # document_list = []
 # for blob in blob_list:
-#     if blob.name == 'llminputdata.json' or blob.name == 'corporate_dataset.json':
-#         continue
+    
     
 #     pdf_content = getdatafromblob(blob.name, os.getenv("CONTAINER_NAME_FRAUD"))
 #     poller = document_client.begin_analyze_document("prebuilt-document", pdf_content)
