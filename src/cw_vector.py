@@ -95,7 +95,7 @@ index_name = os.getenv("index_name")
 search_client = SearchIndexClient(os.getenv("service_endpoint"),AzureKeyCredential(os.getenv("admin_key")))
 key_list = list(data_dict.keys())
 
-
+    
 
 
 #FIELD SCHEMA FOR THE DATA STORED IN THE INDEX

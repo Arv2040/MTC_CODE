@@ -115,6 +115,7 @@ if query:
     # print(semantic_answers)
     context = ""
     for result in results:
+       
         if newquery[-1] == result['CustomerID']:
             context = result
             
