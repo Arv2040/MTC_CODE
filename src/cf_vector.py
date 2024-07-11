@@ -4,8 +4,11 @@ from azure.core.credentials import AzureKeyCredential
 from azure.search.documents.indexes import SearchIndexClient
 from azure.search.documents import SearchClient
 from azure.search.documents.models import VectorizedQuery
+from sklearn.decomposition import PCA
+
 import os
 from dotenv import load_dotenv
+import numpy as np
 load_dotenv()
 from azure.core.credentials import AzureKeyCredential
 from openai import AzureOpenAI
@@ -90,17 +93,27 @@ for i in range(len(d)):
     element['images'] = 'Images- '
     element['txt_text'] = 'a'
     for document_array in document_text_final:
-        for document in document_array:
-            element['document_text'] += document
-            break
+        for idx, document in enumerate(document_array):
+            element['document_text'] += f"{document}"
+            if idx < len(document_array) - 1:  
+                element['document_text'] += '|||'
+        break  
+
+
     for image_array in image_final:
-        for image in image_array:
-            element['images'] += f"{image},"
-            break
+        for idx, image in enumerate(image_array):
+            element['images'] += f"{image}"
+            if idx < len(image_array) - 1:  
+                element['images'] += '|||'
+        break 
+
+# Concatenate txt_text elements
     for text_array in text_final:
-        for text in text_array:
-            element['txt_text'] += text 
-            break
+        for idx, text in enumerate(text_array):
+            element['txt_text'] += f"text"
+            if idx < len(text_array) - 1: 
+                element['txt_text'] += '|||'
+        break  
 
 data = d
 print("done")
@@ -151,14 +164,55 @@ for i in range(len(key_list)):
 names_lists = []
 response_lists = []
 embedding_lists = []
-for i in range(len(key_list)):
-    names_list = [str(dataitem[f'{key_list[i]}']) for dataitem in data]
-    response_list = client.embeddings.create(input=names_list, model = os.getenv("azure_openai_em_name"))
-    embedding_list = [item.embedding for item in response_list.data]
-    names_lists.append(names_list)
-    response_lists.append(response_list)
-    embedding_lists.append(embedding_list)
 
+
+
+# pre_response_list = []
+for i in range(len(key_list)):
+    
+    if key_list[i] in ['document_text','images','txt_text']:
+        response_list = []
+        embedding_list = []
+        names_list = [str(dataitem[f'{key_list[i]}']) for dataitem in data]
+        for dit in names_list:
+            individual_dit_list = dit.split('|||')
+            individual_dit_response = []  
+            embeddings_for_dit = [] 
+            for mini_dit in individual_dit_list:
+                mini_dit_response = []
+                embeddings_for_mini_dit = []
+                chunk_size = 5000
+                for start in range(0, len(mini_dit), chunk_size):
+                        end = start + chunk_size
+                        chunk = mini_dit[start:end]
+                        chunk_response = client.embeddings.create(input=[chunk], model=os.getenv("azure_openai_em_name"))
+                        mini_dit_response.extend(chunk_response)
+                        for item in chunk_response.data:
+                            embeddings_for_mini_dit.extend(item.embedding)
+                        embeddings_for_dit.extend(embeddings_for_mini_dit)
+                        individual_dit_response.extend(mini_dit_response)
+            
+            reduced_embeddings = embeddings_for_dit[:1536]
+            embedding_list.append(reduced_embeddings)
+
+    
+    else:
+
+        
+
+        names_list = [str(dataitem[f'{key_list[i]}']) for dataitem in data]
+        response = client.embeddings.create(input=names_list, model = os.getenv("azure_openai_em_name"))
+        embedding_list = [item.embedding for item in response.data]
+    
+    
+    embedding_lists.append(embedding_list)
+# print(embedding_lists)
+# print(len(embedding_lists[0]))
+# print(len(key_list))
+# embedding_array = np.array(embedding_lists, dtype=object)
+
+# # Check the shape of the array
+# print("Shape of embedding_array:", embedding_array.shape)
 for i, dataitem in enumerate(data):
     for j, key in enumerate(key_list):
         dataitem[f'{key}_Vector'] = embedding_lists[j][i]
