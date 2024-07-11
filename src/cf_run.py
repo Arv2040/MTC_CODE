@@ -34,7 +34,7 @@ col1, col2 = st.columns(2)
 
 blob_list = getbloblist(os.getenv("CONTAINER_NAME_FRAUD"))
 
-index_name = os.getenv("index_name_fraud")
+index_name = "fraudindex5"
 search_client = SearchIndexClient(os.getenv("service_endpoint"), AzureKeyCredential(os.getenv("admin_key")))
 
 
@@ -53,7 +53,7 @@ client = AzureOpenAI(
 search_client = SearchClient(endpoint=os.getenv("service_endpoint"), index_name=index_name, credential=AzureKeyCredential(os.getenv("admin_key")))
 
 # Function to vectorize the prompt
-field_string = "company_id_Vector"
+field_string = "CompanyID_Vector"
 
 # Initialize Langchain components
 if st.session_state.conversation is None:
@@ -84,14 +84,21 @@ else:
 
 if query:
     st.write(f"Your query is: {query}")
-   
-    content = get_embedding(query,field_string,client)
+    prompt = f"This is the customer id {query}, please return it to be in this format - CompanyID: i, where i can be the number provided by the query.Do not give anything else in the response, just give CompanyID: i."
+    enricher = gpt4oinit()
+    newquery = gpt4oresponse(enricher,prompt,20,"give direct answers")
+    st.write(f"Target - {newquery}")
+    content = get_embedding(newquery,"CompanyID_Vector",client)
+    
 
     
     select = [
         'CompanyID', 
         'Date',
-        'document_text'
+        'document_text',
+        'images',
+        'txt_text'
+        
     ]
 
     results = search_client.search(
@@ -100,12 +107,17 @@ if query:
         select=select
     )
 
-    context = next(results)
+    context = ""
+    
+    for result in results:
+       
+        if newquery in f"CompanyID: {result['CompanyID']}":
+            context = result
 
     with st.spinner("ANALYSING THE DATA AND GENERATING REPORT"):
        
       
-        prompt = f"This is the search query: {query}, this is the content:{str(context)}  Make a detailed report taking into consideration all the fields and evaluate whether the company is fraud or not. Point out specific details about positives and negatives and why the company is fraud or not."
+        prompt = f"This is the search query: {query}, this is the content:{str(context)}  Make a detailed report taking into consideration all the fields and evaluate whether the company is fraud or not. Point out specific details about positives and negatives and why the company is fraud or not.give description of image in a section"
         
         openaiclient = gpt4oinit()
         response = gpt4oresponse(openaiclient,prompt,4000,"fraud detection expert")
