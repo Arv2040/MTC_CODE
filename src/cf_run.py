@@ -40,7 +40,7 @@ col1, col2 = st.columns(2)
 
 blob_list = getbloblist(os.getenv("CONTAINER_NAME_FRAUD"))
 
-index_name = "fraudindex9"
+index_name = "fraudindex10"
 search_client = SearchIndexClient(os.getenv("service_endpoint"), AzureKeyCredential(os.getenv("admin_key")))
 
 
@@ -158,35 +158,35 @@ if query:
     st.write(context)
     
     
-#     with st.spinner("ANALYSING THE DATA AND GENERATING REPORT"):
+    with st.spinner("ANALYSING THE DATA AND GENERATING REPORT"):
        
       
-#         prompt = f"{context}"
+        prompt = f"{image_list} analyse this"
         
-#         openaiclient = gpt4oinit()
-#         response = gpt4oresponse(openaiclient,prompt,4000,"fraud detection expert")
+        openaiclient = gpt4oinit()
+        response = gpt4oresponse(openaiclient,prompt,4000,"fraud detection expert")
 
-#         st.session_state.initial_response = response
-#         # st.write(st.session_state.initial_response)
+        st.session_state.initial_response = response
+        # st.write(st.session_state.initial_response)
 
-#         # Add the initial interaction to Langchain memory
-#         st.session_state.conversation.predict(input=f"User: {query}\nAI: {st.session_state.initial_response}")
+        # Add the initial interaction to Langchain memory
+        st.session_state.conversation.predict(input=f"User: {query}\nAI: {st.session_state.initial_response}")
 
-# # Display the initial response if it exists
-# if st.session_state.initial_response:
-#     st.write("Initial Report:")
-#     st.write(st.session_state.initial_response)
+# Display the initial response if it exists
+if st.session_state.initial_response:
+    st.write("Initial Report:")
+    st.write(st.session_state.initial_response)
 
-# # Option for follow-up questions using Langchain
-# st.write("You can ask follow-up questions about the report:")
-# follow_up = st.text_input("Follow-up question:", key="follow_up")
-# if st.button("Ask Follow-up"):
-#     follow_up_response = st.session_state.conversation.predict(input=follow_up)
-#     st.session_state.follow_up_response = follow_up_response
-#     st.rerun()
+# Option for follow-up questions using Langchain
+st.write("You can ask follow-up questions about the report:")
+follow_up = st.text_input("Follow-up question:", key="follow_up")
+if st.button("Ask Follow-up"):
+    follow_up_response = st.session_state.conversation.predict(input=follow_up)
+    st.session_state.follow_up_response = follow_up_response
+    st.rerun()
 
-# # Display the follow-up response if it exists
-# if st.session_state.follow_up_response:
-#     st.write("Follow-up Response:")
-#     st.write(st.session_state.follow_up_response)
+# Display the follow-up response if it exists
+if st.session_state.follow_up_response:
+    st.write("Follow-up Response:")
+    st.write(st.session_state.follow_up_response)
         

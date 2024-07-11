@@ -51,7 +51,7 @@ document_text_final = []
 image_final = []
 text_final = []
 for dir in entries:
-    createcontainer((dir))
+    # createcontainer((dir))
     sub_dir_path = os.path.join(fraud_detection_folder,dir)
     print(sub_dir_path)
     for root,dirs,files in os.walk(sub_dir_path):
@@ -90,32 +90,32 @@ for dir in entries:
     # text_final.append(text_list)
     
 #------------------------------------------------------------------
-for i in range(len(d)):
-    element = d[i]
-    element['document_text'] = 'a'
-    element['images'] = 'Images- '
-    element['txt_text'] = 'a'
-    for document_array in document_text_final:
-        for idx, document in enumerate(document_array):
-            element['document_text'] += f"{document}"
-            if idx < len(document_array) - 1:  
-                element['document_text'] += '|||'
+# for i in range(len(d)):
+#     element = d[i]
+#     element['document_text'] = 'a'
+#     element['images'] = 'Images- '
+#     element['txt_text'] = 'a'
+#     for document_array in document_text_final:
+#         for idx, document in enumerate(document_array):
+#             element['document_text'] += f"{document}"
+#             if idx < len(document_array) - 1:  
+#                 element['document_text'] += '|||'
         
         
 
-    for image_array in image_final:
-        for idx, image in enumerate(image_array):
-            element['images'] += f"{image}"
-            if idx < len(image_array) - 1:  
-                element['images'] += '|||'
+#     for image_array in image_final:
+#         for idx, image in enumerate(image_array):
+#             element['images'] += {image}
+#             if idx < len(image_array) - 1:  
+#                 element['images'] += '|||'
          
         
-# Concatenate txt_text elements
-    for text_array in text_final:
-        for idx, text in enumerate(text_array):
-            element['txt_text'] += f"{text}"
-            if idx < len(text_array) - 1: 
-                element['txt_text'] += '|||'
+# # Concatenate txt_text elements
+#     for text_array in text_final:
+#         for idx, text in enumerate(text_array):
+#             element['txt_text'] += f"{text}"
+#             if idx < len(text_array) - 1: 
+#                 element['txt_text'] += '|||'
           
         
 data = d
@@ -150,7 +150,7 @@ data_dict = dict(dataitem)
 key_list = list(data_dict.keys())
 
 #CREATING THE INDEX
-index_name_fraud = "fraudindex9"
+index_name_fraud = "fraudindex10"
 search_client = SearchIndexClient(os.getenv("service_endpoint"),AzureKeyCredential(os.getenv("admin_key")))
 key_list = list(data_dict.keys())
 
@@ -236,7 +236,7 @@ vector_search = VectorSearch(
 )
 
 # Create the search index and defining the algorithm we previously created
-index = SearchIndex(name="fraudindex9", fields=fields, vector_search=vector_search)
+index = SearchIndex(name="fraudindex10", fields=fields, vector_search=vector_search)
 result = search_client.create_or_update_index(index)
 print(f'{result.name} created')
 
@@ -245,7 +245,7 @@ prefinal_data = getdatafromblob('llminputdata.json', os.getenv("CONTAINER_NAME_F
 json_data = json.loads(prefinal_data)
 
 # Upload the documents to the vector store
-search_client = SearchClient(endpoint=os.getenv("service_endpoint"), index_name="fraudindex9", credential=AzureKeyCredential(os.getenv("admin_key")))
+search_client = SearchClient(endpoint=os.getenv("service_endpoint"), index_name="fraudindex10", credential=AzureKeyCredential(os.getenv("admin_key")))
 results = search_client.upload_documents(json_data)
 if(results):
     print("done")
