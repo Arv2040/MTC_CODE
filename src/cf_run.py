@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents.indexes import SearchIndexClient
 from azure.search.documents import SearchClient
+from azure.ai.formrecognizer import AnalyzeResult
+
 import streamlit as st
 from azure.core.credentials import AzureKeyCredential
 from openai import AzureOpenAI
@@ -13,9 +15,13 @@ from helpers.vector_helpers.getembedding import get_embedding
 from helpers.input_helpers.speech import from_mic
 from helpers.Azure_helpers.blobhelp import getdatafromblob,getbloblist,uploaddata
 from helpers.llm_helpers.gpt4o import gpt4oinit,gpt4oresponse
+from azure.ai.formrecognizer import DocumentAnalysisClient
+import base64
+import json
 
 
 load_dotenv()
+document_client = DocumentAnalysisClient(os.getenv("doc_endpoint"), AzureKeyCredential(os.getenv("doc_apikey")))
 
 st.set_page_config(layout="wide")
 st.header("CREDISHIELD: THE FRAUD DETECTION COPILOT")
@@ -34,7 +40,7 @@ col1, col2 = st.columns(2)
 
 blob_list = getbloblist(os.getenv("CONTAINER_NAME_FRAUD"))
 
-index_name = "fraudindex5"
+index_name = "fraudindex9"
 search_client = SearchIndexClient(os.getenv("service_endpoint"), AzureKeyCredential(os.getenv("admin_key")))
 
 
@@ -85,64 +91,102 @@ else:
 if query:
     st.write(f"Your query is: {query}")
     prompt = f"This is the customer id {query}, please return it to be in this format - CompanyID: i, where i can be the number provided by the query.Do not give anything else in the response, just give CompanyID: i."
-    enricher = gpt4oinit()
-    newquery = gpt4oresponse(enricher,prompt,20,"give direct answers")
-    st.write(f"Target - {newquery}")
-    content = get_embedding(newquery,"CompanyID_Vector",client)
+    
+    content = get_embedding(query,"CompanyID_Vector",client)
     
 
     
     select = [
-        'CompanyID', 
-        'Date',
-        'document_text',
-        'images',
-        'txt_text'
-        
-    ]
+    "CompanyID",
+    "CompanyName",
+    "Date",
+    "Debit_Credit",
+    "Amount",
+    "CompanyAccount",
+    "TransactionDescription",
+    "FinalBalance",
+    "TransactionID",
+    "MerchantFirmName",
+    "MerchantID",
+    "Collateral"
+]
+
 
     results = search_client.search(
         search_text=None,
         vector_queries=[content],
-        select=select
+        select=select,
     )
-
-    context = ""
     
-    for result in results:
-       
-        if newquery in f"CompanyID: {result['CompanyID']}":
-            context = result
-
-    with st.spinner("ANALYSING THE DATA AND GENERATING REPORT"):
+    result = next(results)
+    
+    containername = result['CompanyID']
+    blob_list = getbloblist(containername)
+    document_text_list = []
+    image_list = []
+    text_list = []
+    
+   
+    for blob in blob_list:
+        if '.jpg' in blob.name or '.jpeg' in blob.name or '.png' in blob.name:
+            image_content = getdatafromblob(blob.name,containername)
+            base64_image = base64.b64encode(image_content).decode('utf-8')
+            image_list.append(base64_image)
+        elif '.pdf' in blob.name:
+            
+        
+            pdf_content = getdatafromblob(blob.name, containername)
+            poller = document_client.begin_analyze_document("prebuilt-document", pdf_content)
+            result = poller.result()
+            full_text = ""
+            for page in result.pages:
+                for line in page.lines:
+                    full_text += line.content + "\n"
+            document_text_list.append(full_text)
+        else:
+            text_content = getdatafromblob(blob.name,containername)
+            text_content = text_content.decode('utf-8')
+            text_list.append(text_content)
+    
+    
+    context = {
+        "result":result,
+        "document":document_text_list,
+        "text":text_list,
+        "image":image_list
+    }
+    st.write(context)
+    
+    
+#     with st.spinner("ANALYSING THE DATA AND GENERATING REPORT"):
        
       
-        prompt = f"This is the search query: {query}, this is the content:{str(context)}  Make a detailed report taking into consideration all the fields and evaluate whether the company is fraud or not. Point out specific details about positives and negatives and why the company is fraud or not.give description of image in a section"
+#         prompt = f"{context}"
         
-        openaiclient = gpt4oinit()
-        response = gpt4oresponse(openaiclient,prompt,4000,"fraud detection expert")
+#         openaiclient = gpt4oinit()
+#         response = gpt4oresponse(openaiclient,prompt,4000,"fraud detection expert")
 
-        st.session_state.initial_response = response
-        # st.write(st.session_state.initial_response)
+#         st.session_state.initial_response = response
+#         # st.write(st.session_state.initial_response)
 
-        # Add the initial interaction to Langchain memory
-        st.session_state.conversation.predict(input=f"User: {query}\nAI: {st.session_state.initial_response}")
+#         # Add the initial interaction to Langchain memory
+#         st.session_state.conversation.predict(input=f"User: {query}\nAI: {st.session_state.initial_response}")
 
-# Display the initial response if it exists
-if st.session_state.initial_response:
-    st.write("Initial Report:")
-    st.write(st.session_state.initial_response)
+# # Display the initial response if it exists
+# if st.session_state.initial_response:
+#     st.write("Initial Report:")
+#     st.write(st.session_state.initial_response)
 
-# Option for follow-up questions using Langchain
-st.write("You can ask follow-up questions about the report:")
-follow_up = st.text_input("Follow-up question:", key="follow_up")
-if st.button("Ask Follow-up"):
-    follow_up_response = st.session_state.conversation.predict(input=follow_up)
-    st.session_state.follow_up_response = follow_up_response
-    st.rerun()
+# # Option for follow-up questions using Langchain
+# st.write("You can ask follow-up questions about the report:")
+# follow_up = st.text_input("Follow-up question:", key="follow_up")
+# if st.button("Ask Follow-up"):
+#     follow_up_response = st.session_state.conversation.predict(input=follow_up)
+#     st.session_state.follow_up_response = follow_up_response
+#     st.rerun()
 
-# Display the follow-up response if it exists
-if st.session_state.follow_up_response:
-    st.write("Follow-up Response:")
-    st.write(st.session_state.follow_up_response)
+# # Display the follow-up response if it exists
+# if st.session_state.follow_up_response:
+#     st.write("Follow-up Response:")
+#     st.write(st.session_state.follow_up_response)
         

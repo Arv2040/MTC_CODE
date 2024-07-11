@@ -15,6 +15,7 @@ from azure.core.credentials import AzureKeyCredential
 from openai import AzureOpenAI
 from azure.search.documents.indexes.models import (
     SearchFieldDataType,
+    SimpleField,
     SearchableField,
     SearchField,
     VectorSearch,
@@ -50,7 +51,7 @@ document_text_final = []
 image_final = []
 text_final = []
 for dir in entries:
-#    createcontainer((dir))
+    createcontainer((dir))
     sub_dir_path = os.path.join(fraud_detection_folder,dir)
     print(sub_dir_path)
     for root,dirs,files in os.walk(sub_dir_path):
@@ -58,35 +59,35 @@ for dir in entries:
             with open(os.path.join(sub_dir_path,file),"rb") as data:
                 uploaddata(file,dir,data)
         break
-    blob_list = getbloblist(dir)
+    # blob_list = getbloblist(dir)
     
-    document_text_list = []
-    image_list = []
-    text_list = []
+    # document_text_list = []
+    # image_list = []
+    # text_list = []
    
-    for blob in blob_list:
-        if '.jpg' in blob.name or '.jpeg' in blob.name or '.png' in blob.name:
-            image_content = getdatafromblob(blob.name,dir)
-            base64_image = base64.b64encode(image_content).decode('utf-8')
-            image_list.append(base64_image)
-        elif '.pdf' in blob.name:
+    # for blob in blob_list:
+    #     if '.jpg' in blob.name or '.jpeg' in blob.name or '.png' in blob.name:
+    #         image_content = getdatafromblob(blob.name,dir)
+    #         base64_image = base64.b64encode(image_content).decode('utf-8')
+    #         image_list.append(base64_image)
+    #     elif '.pdf' in blob.name:
             
         
-            pdf_content = getdatafromblob(blob.name, dir)
-            poller = document_client.begin_analyze_document("prebuilt-document", pdf_content)
-            result = poller.result()
-            full_text = ""
-            for page in result.pages:
-                for line in page.lines:
-                    full_text += line.content + "\n"
-            document_text_list.append(full_text)
-        else:
-            text_content = getdatafromblob(blob.name,dir)
-            text_content = text_content.decode('utf-8')
-            text_list.append(text_content)
-    document_text_final.append(document_text_list)
-    image_final.append(image_list)
-    text_final.append(text_list)
+    #         pdf_content = getdatafromblob(blob.name, dir)
+    #         poller = document_client.begin_analyze_document("prebuilt-document", pdf_content)
+    #         result = poller.result()
+    #         full_text = ""
+    #         for page in result.pages:
+    #             for line in page.lines:
+    #                 full_text += line.content + "\n"
+    #         document_text_list.append(full_text)
+    #     else:
+    #         text_content = getdatafromblob(blob.name,dir)
+    #         text_content = text_content.decode('utf-8')
+    #         text_list.append(text_content)
+    # document_text_final.append(document_text_list)
+    # image_final.append(image_list)
+    # text_final.append(text_list)
     
 #------------------------------------------------------------------
 for i in range(len(d)):
@@ -100,7 +101,7 @@ for i in range(len(d)):
             if idx < len(document_array) - 1:  
                 element['document_text'] += '|||'
         
-
+        
 
     for image_array in image_final:
         for idx, image in enumerate(image_array):
@@ -108,15 +109,15 @@ for i in range(len(d)):
             if idx < len(image_array) - 1:  
                 element['images'] += '|||'
          
-
+        
 # Concatenate txt_text elements
     for text_array in text_final:
         for idx, text in enumerate(text_array):
-            element['txt_text'] += f"text"
+            element['txt_text'] += f"{text}"
             if idx < len(text_array) - 1: 
                 element['txt_text'] += '|||'
           
-
+        
 data = d
 print("done")
 
@@ -149,7 +150,7 @@ data_dict = dict(dataitem)
 key_list = list(data_dict.keys())
 
 #CREATING THE INDEX
-index_name_fraud = "fraudindex5"
+index_name_fraud = "fraudindex9"
 search_client = SearchIndexClient(os.getenv("service_endpoint"),AzureKeyCredential(os.getenv("admin_key")))
 key_list = list(data_dict.keys())
 
@@ -160,8 +161,10 @@ for i in range(1, len(key_list),1):
     element = SearchableField(name=f"{str(key_list[i])}", type=SearchFieldDataType.String, sortable=True, filterable=True, facetable=True)
     fields.append(element)
 for i in range(len(key_list)):
+    
     element = SearchField(name=f"{str(key_list[i])}_Vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single), searchable=True, vector_search_dimensions=1536, vector_search_profile_name="myHnswProfile")
     fields.append(element)
+  
 
 names_lists = []
 response_lists = []
@@ -171,52 +174,46 @@ embedding_lists = []
 
 # pre_response_list = []
 for i in range(len(key_list)):
-    
-    if key_list[i] in ['document_text','images','txt_text']:
-        response_list = []
-        embedding_list = []
-        names_list = [str(dataitem[f'{key_list[i]}']) for dataitem in data]
-        for dit in names_list:
-            individual_dit_list = dit.split('|||')
-            individual_dit_response = []  
-            embeddings_for_dit = [] 
-            for mini_dit in individual_dit_list:
-                mini_dit_response = []
-                embeddings_for_mini_dit = []
-                chunk_size = 5000
-                for start in range(0, len(mini_dit), chunk_size):
-                        end = start + chunk_size
-                        chunk = mini_dit[start:end]
-                        chunk_response = client.embeddings.create(input=[chunk], model=os.getenv("azure_openai_em_name"))
-                        mini_dit_response.extend(chunk_response)
-                        for item in chunk_response.data:
-                            embeddings_for_mini_dit.extend(item.embedding)
-                        embeddings_for_dit.extend(embeddings_for_mini_dit)
-                        individual_dit_response.extend(mini_dit_response)
-            
-            reduced_embeddings = embeddings_for_dit[:1536]
-            embedding_list.append(reduced_embeddings)
-
-    
-    else:
-
-        
-
         names_list = [str(dataitem[f'{key_list[i]}']) for dataitem in data]
         response = client.embeddings.create(input=names_list, model = os.getenv("azure_openai_em_name"))
         embedding_list = [item.embedding for item in response.data]
+        embedding_lists.append(embedding_list)
     
     
-    embedding_lists.append(embedding_list)
-# print(embedding_lists)
-# print(len(embedding_lists[0]))
-# print(len(key_list))
-# embedding_array = np.array(embedding_lists, dtype=object)
+    #     response_list = []
+    #     embedding_list = []
+    #     names_list = [str(dataitem[f'{key_list[i]}']) for dataitem in data]
+    #     for dit in names_list:
+    #         individual_dit_list = dit.split('|||')
+    #         individual_dit_response = []  
+    #         embeddings_for_dit = [] 
+    #         for mini_dit in individual_dit_list:
+    #             mini_dit_response = []
+    #             embeddings_for_mini_dit = []
+    #             chunk_size = 5000
+    #             for start in range(0, len(mini_dit), chunk_size):
+    #                     end = start + chunk_size
+    #                     chunk = mini_dit[start:end]
+    #                     chunk_response = client.embeddings.create(input=[chunk], model=os.getenv("azure_openai_em_name"))
+    #                     mini_dit_response.extend(chunk_response)
+    #                     for item in chunk_response.data:
+    #                         embeddings_for_mini_dit.extend(item.embedding)
+    #                     embeddings_for_dit.extend(embeddings_for_mini_dit)
+    #                     individual_dit_response.extend(mini_dit_response)
+            
+    #         reduced_embeddings = embeddings_for_dit[:1536]
+    #         embedding_list.append(reduced_embeddings)
 
-# # Check the shape of the array
-# print("Shape of embedding_array:", embedding_array.shape)
+    
+    
+
+        
+
+        
+
 for i, dataitem in enumerate(data):
     for j, key in enumerate(key_list):
+        
         dataitem[f'{key}_Vector'] = embedding_lists[j][i]
 
 # Open the local file and upload its contents
@@ -239,7 +236,7 @@ vector_search = VectorSearch(
 )
 
 # Create the search index and defining the algorithm we previously created
-index = SearchIndex(name="fraudindex5", fields=fields, vector_search=vector_search)
+index = SearchIndex(name="fraudindex9", fields=fields, vector_search=vector_search)
 result = search_client.create_or_update_index(index)
 print(f'{result.name} created')
 
@@ -248,8 +245,11 @@ prefinal_data = getdatafromblob('llminputdata.json', os.getenv("CONTAINER_NAME_F
 json_data = json.loads(prefinal_data)
 
 # Upload the documents to the vector store
-search_client = SearchClient(endpoint=os.getenv("service_endpoint"), index_name="fraudindex5", credential=AzureKeyCredential(os.getenv("admin_key")))
+search_client = SearchClient(endpoint=os.getenv("service_endpoint"), index_name="fraudindex9", credential=AzureKeyCredential(os.getenv("admin_key")))
 results = search_client.upload_documents(json_data)
-print(f"Uploaded {len(json_data)} documents")
+if(results):
+    print("done")
+else:
+    print("No")
 
 
