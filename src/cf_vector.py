@@ -7,6 +7,7 @@ from azure.search.documents.models import VectorizedQuery
 from sklearn.decomposition import PCA
 
 import os
+import base64
 from dotenv import load_dotenv
 import numpy as np
 load_dotenv()
@@ -38,7 +39,7 @@ client = AzureOpenAI(
 )
 # very very important code here-------------- dont touch---------
 document_client = DocumentAnalysisClient(os.getenv("doc_endpoint"), AzureKeyCredential(os.getenv("doc_apikey")))
-main_folder_path = r"C:\Users\A J\Desktop\MTC_CODE\Datasets"
+main_folder_path = r"/Users/mihir/Desktop/MTC_Code/MTC_CODE/Datasets"
 fraud_detection_folder = os.path.join(main_folder_path, "Fraud_Detection")
 fraud_directory = next(os.walk(fraud_detection_folder))
 current_directory, directories, files = fraud_directory
@@ -66,7 +67,8 @@ for dir in entries:
     for blob in blob_list:
         if '.jpg' in blob.name or '.jpeg' in blob.name or '.png' in blob.name:
             image_content = getdatafromblob(blob.name,dir)
-            image_list.append(image_content)
+            base64_image = base64.b64encode(image_content).decode('utf-8')
+            image_list.append(base64_image)
         elif '.pdf' in blob.name:
             
         
