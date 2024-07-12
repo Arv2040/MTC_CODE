@@ -149,10 +149,6 @@ if query:
             text_content = text_content.decode('utf-8')
             text_list.append(text_content)
     
-    st.write(f"Number of images processed: {len(image_list)}")
-    if image_list:
-        st.write("Sample of first image data (first 100 characters):")
-        st.write(image_list[0][:20] + "...")
     
     context = {
         "result":result,
