@@ -132,6 +132,7 @@ if query:
             image_content = getdatafromblob(blob.name,containername)
             base64_image = base64.b64encode(image_content).decode('utf-8')
             image_list.append(base64_image)
+
         elif '.pdf' in blob.name:
             
         
@@ -148,6 +149,10 @@ if query:
             text_content = text_content.decode('utf-8')
             text_list.append(text_content)
     
+    st.write(f"Number of images processed: {len(image_list)}")
+    if image_list:
+        st.write("Sample of first image data (first 100 characters):")
+        st.write(image_list[0][:20] + "...")
     
     context = {
         "result":result,
@@ -161,10 +166,10 @@ if query:
     with st.spinner("ANALYSING THE DATA AND GENERATING REPORT"):
        
       
-        prompt = f"{image_list} analyse this"
+        prompt1 = f"Analyse {image_list} and {document_text_list}"
         
         openaiclient = gpt4oinit()
-        response = gpt4oresponse(openaiclient,prompt,4000,"fraud detection expert")
+        response = gpt4oresponse(openaiclient,prompt1,image_list, document_text_list, 4000,"fraud detection expert")
 
         st.session_state.initial_response = response
         # st.write(st.session_state.initial_response)
