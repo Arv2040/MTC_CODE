@@ -3,22 +3,23 @@ from dotenv import load_dotenv
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents.indexes import SearchIndexClient
 from azure.search.documents import SearchClient
-from azure.ai.formrecognizer import AnalyzeResult
+from azure.ai.formrecognizer import AnalyzeResult, DocumentAnalysisClient
 
 import streamlit as st
 from azure.core.credentials import AzureKeyCredential
 from openai import AzureOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationChain
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.docstore.document import Document
+from langchain.chains.summarize import load_summarize_chain
 from helpers.llm_helpers.langchainhelpers import createlangchainllm
 from helpers.vector_helpers.getembedding import get_embedding
 from helpers.input_helpers.speech import from_mic
-from helpers.Azure_helpers.blobhelp import getdatafromblob,getbloblist,uploaddata
-from helpers.llm_helpers.gpt4o import gpt4oinit,gpt4oresponse
-from azure.ai.formrecognizer import DocumentAnalysisClient
+from helpers.Azure_helpers.blobhelp import getdatafromblob, getbloblist, uploaddata
+from helpers.llm_helpers.gpt4o import gpt4oinit, gpt4oresponse
 import base64
 import json
-
 
 load_dotenv()
 document_client = DocumentAnalysisClient(os.getenv("doc_endpoint"), AzureKeyCredential(os.getenv("doc_apikey")))
@@ -34,16 +35,12 @@ if 'conversation' not in st.session_state:
 if 'follow_up_response' not in st.session_state:
     st.session_state.follow_up_response = ""
 
-
-
 col1, col2 = st.columns(2)
 
 blob_list = getbloblist(os.getenv("CONTAINER_NAME_FRAUD"))
 
 index_name = "fraudindex10"
 search_client = SearchIndexClient(os.getenv("service_endpoint"), AzureKeyCredential(os.getenv("admin_key")))
-
-
 
 # ADA-002 MODEL FOR EMBEDDING
 client = AzureOpenAI(
@@ -53,8 +50,6 @@ client = AzureOpenAI(
     api_key=os.getenv("azure_openai_key"),
 )
 
-
-
 #MAIN CODE
 search_client = SearchClient(endpoint=os.getenv("service_endpoint"), index_name=index_name, credential=AzureKeyCredential(os.getenv("admin_key")))
 
@@ -62,9 +57,9 @@ search_client = SearchClient(endpoint=os.getenv("service_endpoint"), index_name=
 field_string = "CompanyID_Vector"
 
 # Initialize Langchain components
+llm = createlangchainllm()
 if st.session_state.conversation is None:
     memory = ConversationBufferMemory()
-    llm = createlangchainllm()
     st.session_state.conversation = ConversationChain(
         llm=llm,
         memory=memory,
@@ -77,7 +72,6 @@ with col1:
 query = ""
 
 if speech_bool:
-    
     st.write("Listening...")
     query = from_mic()
 else:
@@ -93,25 +87,13 @@ if query:
     st.write(f"Your query is: {query}")
     prompt = f"This is the customer id {query}, please return it to be in this format - CompanyID: i, where i can be the number provided by the query.Do not give anything else in the response, just give CompanyID: i."
     
-    content = get_embedding(query,"CompanyID_Vector",client)
-    
-
+    content = get_embedding(query, "CompanyID_Vector", client)
     
     select = [
-    "CompanyID",
-    "CompanyName",
-    "Date",
-    "Debit_Credit",
-    "Amount",
-    "CompanyAccount",
-    "TransactionDescription",
-    "FinalBalance",
-    "TransactionID",
-    "MerchantFirmName",
-    "MerchantID",
-    "Collateral"
-]
-
+        "CompanyID", "CompanyName", "Date", "Debit_Credit", "Amount",
+        "CompanyAccount", "TransactionDescription", "FinalBalance",
+        "TransactionID", "MerchantFirmName", "MerchantID", "Collateral"
+    ]
 
     results = search_client.search(
         search_text=None,
@@ -127,16 +109,12 @@ if query:
     image_list = []
     text_list = []
     
-   
     for blob in blob_list:
         if '.jpg' in blob.name or '.jpeg' in blob.name or '.png' in blob.name:
-            image_content = getdatafromblob(blob.name,containername)
+            image_content = getdatafromblob(blob.name, containername)
             base64_image = base64.b64encode(image_content).decode('utf-8')
             image_list.append(base64_image)
-
         elif '.pdf' in blob.name:
-            
-        
             pdf_content = getdatafromblob(blob.name, containername)
             poller = document_client.begin_analyze_document("prebuilt-document", pdf_content)
             result = poller.result()
@@ -146,30 +124,44 @@ if query:
                     full_text += line.content + "\n"
             document_text_list.append(full_text)
         else:
-            text_content = getdatafromblob(blob.name,containername)
+            text_content = getdatafromblob(blob.name, containername)
             text_content = text_content.decode('utf-8')
             text_list.append(text_content)
     
-    
     context = {
-        "result":result,
-        "document":document_text_list,
-        "text":text_list,
-        "image":image_list
+        "result": result,
+        "document": document_text_list,
+        "text": text_list,
+        "image": image_list
     }
     st.write(context)
     
-    
     with st.spinner("ANALYSING THE DATA AND GENERATING REPORT"):
-       
-      
-        prompt1 = f"Analyse {image_list} and {document_text_list}"
-        
-        openaiclient = gpt4oinit()
-        response = gpt4oresponse(openaiclient,prompt1,image_list, document_text_list, 4000,"fraud detection expert")
+        # Create a text splitter
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=10000,
+            chunk_overlap=200,
+            length_function=len,
+        )
 
-        st.session_state.initial_response = response
-        # st.write(st.session_state.initial_response)
+        # Split the documents
+        docs = [Document(page_content=text) for text in document_text_list]
+        split_docs = text_splitter.split_documents(docs)
+
+        # Initialize the summarization chain
+        chain = load_summarize_chain(llm, chain_type="map_reduce")
+
+        # Process chunks and summarize
+        summary = chain.run(split_docs)
+
+        # Process images separately if needed
+        openaiclient = gpt4oinit()
+        image_analysis = gpt4oresponse(openaiclient, "Analyse these images", image_list, [], 4000, "fraud detection expert")
+
+        # Combine summary and image analysis
+        final_response = f"Document Summary:\n{summary}\n\nImage Analysis:\n{image_analysis}"
+
+        st.session_state.initial_response = final_response
 
         # Add the initial interaction to Langchain memory
         st.session_state.conversation.predict(input=f"User: {query}\nAI: {st.session_state.initial_response}")
