@@ -82,11 +82,12 @@ if speech_bool:
     query = from_mic()
 else:
     with col2:
-        input = st.text_input("Enter your query")
+        st.write("CompanyID:", end=" ")
+        company_id = st.selectbox("", options=["100001", "100002", "100003", "100004", "100005"], label_visibility="collapsed")
         text_bool = st.button("CHAT WITH COPILOT")
 
         if text_bool:
-            query = input
+            query = company_id
 
 if query:
     st.write(f"Your query is: {query}")
@@ -190,4 +191,3 @@ if st.button("Ask Follow-up"):
 if st.session_state.follow_up_response:
     st.write("Follow-up Response:")
     st.write(st.session_state.follow_up_response)
-        
