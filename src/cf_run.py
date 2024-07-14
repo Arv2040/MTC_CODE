@@ -134,7 +134,7 @@ if query:
         "text": text_list,
         "image": image_list
     }
-   
+    # st.write(context)
     
     with st.spinner("ANALYSING THE DATA AND GENERATING REPORT"):
         # Create a text splitter
@@ -158,8 +158,11 @@ if query:
         openaiclient = gpt4oinit()
         image_analysis = gpt4oresponse(openaiclient, "Analyse these images", image_list, [], 4000, "fraud detection expert")
 
-        # Combine summary and image analysis
-        final_response = f"Document Summary:\n{summary}\n\nImage Analysis:\n{image_analysis}"
+        # Process text data
+        text_analysis = gpt4oresponse(openaiclient, "Analyze this text data for potential fraud indicators", [], text_list, 4000, "fraud detection expert")
+
+        # Combine summary, image analysis, and text analysis
+        final_response = f"Document Summary:\n{summary}\n\nImage Analysis:\n{image_analysis}\n\nText Analysis:\n{text_analysis}"
 
         st.session_state.initial_response = final_response
 
