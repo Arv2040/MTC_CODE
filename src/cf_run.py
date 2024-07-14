@@ -134,7 +134,7 @@ if query:
         "text": text_list,
         "image": image_list
     }
-    st.write(context)
+   
     
     with st.spinner("ANALYSING THE DATA AND GENERATING REPORT"):
         # Create a text splitter
