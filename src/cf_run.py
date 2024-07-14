@@ -132,6 +132,9 @@ def process_data(query):
     
     result = next(results)
     
+    # Create a dictionary with all selected fields
+    company_data = {field: result.get(field) for field in select}
+    
     containername = result['CompanyID']
     blob_list = getbloblist(containername)
     
@@ -139,7 +142,7 @@ def process_data(query):
     
     # Create a text splitter
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=5000,  # Reduced chunk size for faster processing
+        chunk_size=5000,
         chunk_overlap=100,
         length_function=len,
     )
@@ -152,17 +155,38 @@ def process_data(query):
     chain = load_summarize_chain(llm, chain_type="map_reduce")
 
     # Process chunks and summarize
-    summary = chain.run(split_docs)
+    document_summary = chain.run(split_docs)
 
     # Process images separately if needed
     openaiclient = gpt4oinit()
-    image_analysis = gpt4oresponse(openaiclient, "Analyse these images", image_list, [], 2000, "fraud detection expert")
+    image_analysis = gpt4oresponse(openaiclient, "Analyze these images for potential fraud indicators and validate against the company data", image_list, [json.dumps(company_data)], 2000, "fraud detection expert")
 
     # Process text data
-    text_analysis = gpt4oresponse(openaiclient, "Analyze this text data for potential fraud indicators", [], text_list, 2000, "fraud detection expert")
+    text_analysis = gpt4oresponse(openaiclient, "Analyze this text data for potential fraud indicators and validate against the company data", [], text_list + [json.dumps(company_data)], 2000, "fraud detection expert")
 
-    # Combine summary, image analysis, and text analysis
-    final_response = f"Document Summary:\n{summary}\n\nImage Analysis:\n{image_analysis}\n\nText Analysis:\n{text_analysis}"
+    # Generate overall analysis
+    overall_analysis_prompt = f"""
+    As a fraud detection expert, provide a comprehensive analysis based on the following information:
+
+    1. Company Data: {json.dumps(company_data, indent=2)}
+    2. Document Summary: {document_summary}
+    3. Image Analysis: {image_analysis}
+    4. Text Analysis: {text_analysis}
+
+    Please include:
+    1. A summary of the key points from the company data
+    2. Validation of the company data against the information found in documents and images
+    3. Identification of any discrepancies or potential fraud indicators
+    4. An overall risk assessment
+    5. Recommendations for further investigation, if necessary
+
+    Provide your analysis in a clear, structured format.
+    """
+
+    overall_analysis = gpt4oresponse(openaiclient, overall_analysis_prompt, [], [], 3000, "fraud detection expert")
+
+    # Combine all analyses into the final response
+    final_response = f"Overall Analysis:\n{overall_analysis}\n\nDetailed Company Data:\n{json.dumps(company_data, indent=2)}\n\nDocument Summary:\n{document_summary}\n\nImage Analysis:\n{image_analysis}\n\nText Analysis:\n{text_analysis}"
     
     return final_response
 
