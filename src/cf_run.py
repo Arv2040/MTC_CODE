@@ -1,4 +1,5 @@
 import os
+import asyncio
 from dotenv import load_dotenv
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents.indexes import SearchIndexClient
@@ -34,6 +35,8 @@ if 'conversation' not in st.session_state:
     st.session_state.conversation = None
 if 'follow_up_response' not in st.session_state:
     st.session_state.follow_up_response = ""
+if 'processing_complete' not in st.session_state:
+    st.session_state.processing_complete = False
 
 col1, col2 = st.columns(2)
 
@@ -83,10 +86,36 @@ else:
         if text_bool:
             query = company_id
 
-if query:
-    st.write(f"Your query is: {query}")
-    prompt = f"This is the customer id {query}, please return it to be in this format - CompanyID: i, where i can be the number provided by the query.Do not give anything else in the response, just give CompanyID: i."
-    
+async def process_file(blob, containername):
+    if '.jpg' in blob.name or '.jpeg' in blob.name or '.png' in blob.name:
+        image_content = await asyncio.to_thread(getdatafromblob, blob.name, containername)
+        base64_image = base64.b64encode(image_content).decode('utf-8')
+        return ('image', base64_image)
+    elif '.pdf' in blob.name:
+        pdf_content = await asyncio.to_thread(getdatafromblob, blob.name, containername)
+        poller = await asyncio.to_thread(document_client.begin_analyze_document, "prebuilt-document", pdf_content)
+        result = await asyncio.to_thread(poller.result)
+        full_text = "\n".join([line.content for page in result.pages for line in page.lines])
+        return ('document', full_text)
+    else:
+        text_content = await asyncio.to_thread(getdatafromblob, blob.name, containername)
+        text_content = text_content.decode('utf-8')
+        return ('text', text_content)
+
+async def process_files(blob_list, containername):
+    tasks = [process_file(blob, containername) for blob in blob_list]
+    results = await asyncio.gather(*tasks)
+    document_text_list, image_list, text_list = [], [], []
+    for file_type, content in results:
+        if file_type == 'document':
+            document_text_list.append(content)
+        elif file_type == 'image':
+            image_list.append(content)
+        elif file_type == 'text':
+            text_list.append(content)
+    return document_text_list, image_list, text_list
+
+def process_data(query):
     content = get_embedding(query, "CompanyID_Vector", client)
     
     select = [
@@ -105,73 +134,52 @@ if query:
     
     containername = result['CompanyID']
     blob_list = getbloblist(containername)
-    document_text_list = []
-    image_list = []
-    text_list = []
     
-    for blob in blob_list:
-        if '.jpg' in blob.name or '.jpeg' in blob.name or '.png' in blob.name:
-            image_content = getdatafromblob(blob.name, containername)
-            base64_image = base64.b64encode(image_content).decode('utf-8')
-            image_list.append(base64_image)
-        elif '.pdf' in blob.name:
-            pdf_content = getdatafromblob(blob.name, containername)
-            poller = document_client.begin_analyze_document("prebuilt-document", pdf_content)
-            result = poller.result()
-            full_text = ""
-            for page in result.pages:
-                for line in page.lines:
-                    full_text += line.content + "\n"
-            document_text_list.append(full_text)
-        else:
-            text_content = getdatafromblob(blob.name, containername)
-            text_content = text_content.decode('utf-8')
-            text_list.append(text_content)
+    document_text_list, image_list, text_list = asyncio.run(process_files(blob_list, containername))
     
-    context = {
-        "result": result,
-        "document": document_text_list,
-        "text": text_list,
-        "image": image_list
-    }
-    # st.write(context)
+    # Create a text splitter
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=5000,  # Reduced chunk size for faster processing
+        chunk_overlap=100,
+        length_function=len,
+    )
+
+    # Split the documents
+    docs = [Document(page_content=text) for text in document_text_list]
+    split_docs = text_splitter.split_documents(docs)
+
+    # Initialize the summarization chain
+    chain = load_summarize_chain(llm, chain_type="map_reduce")
+
+    # Process chunks and summarize
+    summary = chain.run(split_docs)
+
+    # Process images separately if needed
+    openaiclient = gpt4oinit()
+    image_analysis = gpt4oresponse(openaiclient, "Analyse these images", image_list, [], 2000, "fraud detection expert")
+
+    # Process text data
+    text_analysis = gpt4oresponse(openaiclient, "Analyze this text data for potential fraud indicators", [], text_list, 2000, "fraud detection expert")
+
+    # Combine summary, image analysis, and text analysis
+    final_response = f"Document Summary:\n{summary}\n\nImage Analysis:\n{image_analysis}\n\nText Analysis:\n{text_analysis}"
     
-    with st.spinner("ANALYSING THE DATA AND GENERATING REPORT"):
-        # Create a text splitter
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=10000,
-            chunk_overlap=200,
-            length_function=len,
-        )
+    return final_response
 
-        # Split the documents
-        docs = [Document(page_content=text) for text in document_text_list]
-        split_docs = text_splitter.split_documents(docs)
+if query and not st.session_state.processing_complete:
+    st.write(f"Your query is: {query}")
+    
+    with st.spinner("Processing..."):
+        # Process data
+        st.session_state.initial_response = process_data(query)
+        st.session_state.processing_complete = True
 
-        # Initialize the summarization chain
-        chain = load_summarize_chain(llm, chain_type="map_reduce")
+    # Add the initial interaction to Langchain memory
+    st.session_state.conversation.predict(input=f"User: {query}\nAI: {st.session_state.initial_response}")
 
-        # Process chunks and summarize
-        summary = chain.run(split_docs)
-
-        # Process images separately if needed
-        openaiclient = gpt4oinit()
-        image_analysis = gpt4oresponse(openaiclient, "Analyse these images", image_list, [], 4000, "fraud detection expert")
-
-        # Process text data
-        text_analysis = gpt4oresponse(openaiclient, "Analyze this text data for potential fraud indicators", [], text_list, 4000, "fraud detection expert")
-
-        # Combine summary, image analysis, and text analysis
-        final_response = f"Document Summary:\n{summary}\n\nImage Analysis:\n{image_analysis}\n\nText Analysis:\n{text_analysis}"
-
-        st.session_state.initial_response = final_response
-
-        # Add the initial interaction to Langchain memory
-        st.session_state.conversation.predict(input=f"User: {query}\nAI: {st.session_state.initial_response}")
-
-# Display the initial response if it exists
-if st.session_state.initial_response:
-    st.write("Initial Report:")
+# Display the initial response if it exists and processing is complete
+if st.session_state.initial_response and st.session_state.processing_complete:
+    st.write("Final Report:")
     st.write(st.session_state.initial_response)
 
 # Option for follow-up questions using Langchain
@@ -180,7 +188,7 @@ follow_up = st.text_input("Follow-up question:", key="follow_up")
 if st.button("Ask Follow-up"):
     follow_up_response = st.session_state.conversation.predict(input=follow_up)
     st.session_state.follow_up_response = follow_up_response
-    st.rerun()
+    st.experimental_rerun()
 
 # Display the follow-up response if it exists
 if st.session_state.follow_up_response:
