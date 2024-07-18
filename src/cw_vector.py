@@ -26,9 +26,6 @@ from azure.search.documents.indexes.models import (
 import json
 
 
-
-
-
 #CLIENT FOR EMBEDDING - ADA-002
 client = AzureOpenAI(
     azure_deployment= os.getenv("azure_openai_model_dep_name_em"),
@@ -38,9 +35,32 @@ client = AzureOpenAI(
    
 )
 
+# very very important code here-------------- dont touch---------
+document_client = DocumentAnalysisClient(os.getenv("doc_endpoint"), AzureKeyCredential(os.getenv("doc_apikey")))
+main_folder_path = r"C:\Users\Arush\Desktop\MTC_CODE\Datasets"
+credit_worth_folder = os.path.join(main_folder_path, "Credit_Worthiness")
+credit_worth_directory = next(os.walk(credit_worth_folder))
+current_directory, directories, files = credit_worth_directory
+entries = os.listdir(credit_worth_folder)
+d = getdatafromblob('customer_data.json','unstructureddata')
+d = json.loads(d)
+document_text_final = []
+image_final = []
+text_final = []
+for dir in entries:
+    # createcontainer((dir))
+    sub_dir_path = os.path.join(credit_worth_folder,dir)
+    print(sub_dir_path)
+    for root,dirs,files in os.walk(sub_dir_path):
+        for file in files:
+            with open(os.path.join(sub_dir_path,file),"rb") as data:
+                uploaddata(file,dir,data)
+        break
 
+data = d
+print("done")
 
-
+'''
 #getting the list of blobs from the container
 blob_list = getbloblist(os.getenv("CONTAINER_NAME"))
 
@@ -54,7 +74,7 @@ document_client = DocumentAnalysisClient(os.getenv("doc_endpoint"),AzureKeyCrede
 document_list = []
 
 for blob in blob_list:
-    if blob.name == 'llminputdata.json' or blob.name == "llminputdatafinal.json" or blob.name == 'customer_data.json':
+    if blob.name == 'llminputdata.json' or blob.name == "llminputdatafinal.json" or blob.name == 'customer_data.json' or blob.name == 'checkthis.json':
         continue
     
     pdf_content = getdatafromblob(blob.name,os.getenv("CONTAINER_NAME"))
@@ -82,9 +102,7 @@ for i in range(1,11,1):
                 if(customer['CustomerID'] == str(i)):
                    
                     customer['document_text'] += document
-                    
-
-                    
+'''
 
 dataitem = data[0]
 data_dict = dict(dataitem)
@@ -193,8 +211,7 @@ vector_search = VectorSearch(
 
 # semantic_search = SemanticSearch(configurations=[semantic_config])
 # Create the search index and defining the algorithm we previously created
-index = SearchIndex(name=index_name, fields=fields,
-                    vector_search=vector_search)
+index = SearchIndex(name=index_name, fields=fields,vector_search=vector_search)
 result = search_client.create_or_update_index(index)
 print(f' {result.name} created')
 
@@ -206,8 +223,11 @@ json_data = json.loads(prefinal_data)
 #uploaded the documents to the vector store
 search_client = SearchClient(endpoint=os.getenv("service_endpoint"), index_name=index_name, credential=AzureKeyCredential(os.getenv("admin_key")))
 result = search_client.upload_documents(json_data)
-print(f"Uploaded {len(json_data)} documents") 
-
+#print(f"Uploaded {len(json_data)} documents") 
+if(result):
+    print("done")
+else:
+    print("No")
 
 
 
