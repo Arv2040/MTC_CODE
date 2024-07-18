@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents.indexes import SearchIndexClient
 from azure.search.documents import SearchClient
-from azure.ai.formrecognizer import AnalyzeResult, DocumentAnalysisClient
+from azure.ai.formrecognizer import DocumentAnalysisClient
 
 import streamlit as st
 from azure.core.credentials import AzureKeyCredential
@@ -17,7 +17,7 @@ from langchain.chains.summarize import load_summarize_chain
 from helpers.llm_helpers.langchainhelpers import createlangchainllm
 from helpers.vector_helpers.getembedding import get_embedding
 from helpers.input_helpers.speech import from_mic
-from helpers.Azure_helpers.blobhelp import getdatafromblob, getbloblist, uploaddata
+from helpers.Azure_helpers.blobhelp import getdatafromblob, getbloblist
 from helpers.llm_helpers.gpt4o import gpt4oinit, gpt4oresponse
 import azure.cognitiveservices.speech as speechsdk
 import base64
@@ -34,10 +34,14 @@ if 'initial_response' not in st.session_state:
     st.session_state.initial_response = ""
 if 'conversation' not in st.session_state:
     st.session_state.conversation = None
-if 'follow_up_response' not in st.session_state:
-    st.session_state.follow_up_response = ""
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
 if 'processing_complete' not in st.session_state:
     st.session_state.processing_complete = False
+if 'company_data' not in st.session_state:
+    st.session_state.company_data = None
+if 'follow_up_questions' not in st.session_state:
+    st.session_state.follow_up_questions = []
 
 col1, col2 = st.columns(2)
 
@@ -167,6 +171,7 @@ def process_data(query):
     
     # Create a dictionary with all selected fields
     company_data = {field: result.get(field) for field in select}
+    st.session_state.company_data = company_data
     
     containername = result['CompanyID']
     blob_list = getbloblist(containername)
@@ -271,21 +276,49 @@ if query and not st.session_state.processing_complete:
 
     # Add the initial interaction to Langchain memory
     st.session_state.conversation.predict(input=f"User: {query}\nAI: {st.session_state.initial_response}")
+    st.session_state.chat_history.append(("User", query))
+    st.session_state.chat_history.append(("AI", st.session_state.initial_response))
 
-# Display the initial response if it exists and processing is complete
-if st.session_state.initial_response and st.session_state.processing_complete:
-    st.write("Final Report:")
-    st.write(st.session_state.initial_response)
+# Display the chat history
+st.write("Chat History:")
+for role, message in st.session_state.chat_history:
+    st.write(f"{role}: {message}")
 
-# Option for follow-up questions using Langchain
-st.write("You can ask follow-up questions about the report:")
-follow_up = st.text_input("Follow-up question:", key="follow_up")
-if st.button("Ask Follow-up"):
-    follow_up_response = st.session_state.conversation.predict(input=follow_up)
-    st.session_state.follow_up_response = follow_up_response
+# Continuous chat interface
+def get_follow_up_response(question):
+    context = f"""
+    Based on the previous analysis and the following company data:
+    {json.dumps(st.session_state.company_data, indent=2)}
+    
+    Please answer the following question:
+    {question}
+    """
+    return st.session_state.conversation.predict(input=context)
+
+# Create a form for new follow-up questions
+with st.form(key='new_follow_up_form'):
+    new_follow_up = st.text_input("Your question:", key="new_follow_up")
+    submit_button = st.form_submit_button("Send")
+    
+    if submit_button and new_follow_up:
+        with st.spinner("Processing your question..."):
+            follow_up_response = get_follow_up_response(new_follow_up)
+        st.session_state.chat_history.append(("User", new_follow_up))
+        st.session_state.chat_history.append(("AI", follow_up_response))
+        st.session_state.follow_up_questions.append(new_follow_up)
+        st.experimental_rerun()
+
+# Display all follow-up questions and their responses
+for i, question in enumerate(st.session_state.follow_up_questions):
+    st.write(f"User: {question}")
+    st.write(f"AI: {st.session_state.chat_history[2*i+3][1]}")  # +3 because of initial query and response
+
+# Clear chat history button
+if st.button("Clear Chat History"):
+    st.session_state.chat_history = []
+    st.session_state.conversation = None
+    st.session_state.initial_response = ""
+    st.session_state.processing_complete = False
+    st.session_state.company_data = None
+    st.session_state.follow_up_questions = []
     st.experimental_rerun()
-
-# Display the follow-up response if it exists
-if st.session_state.follow_up_response:
-    st.write("Follow-up Response:")
-    st.write(st.session_state.follow_up_response)
