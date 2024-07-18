@@ -251,5 +251,3 @@ if(results):
     print("done")
 else:
     print("No")
-
-
