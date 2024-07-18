@@ -5,6 +5,7 @@ azure-cognitiveservices-speech
 openai
 azure-storage-blob
 streamlit
+streamlit-extras
 langchain
 langchain-community 
 python-dotenv
