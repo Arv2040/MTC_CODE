@@ -8,7 +8,7 @@ streamlit
 langchain
 langchain-community 
 python-dotenv
-
+langchain-openai
 
 #to activate the venv environment, run this if you are using Windows Powershell:
 #.venv\Scripts\Activate.ps1

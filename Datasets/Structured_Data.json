@@ -1,0 +1,73 @@
+[
+  {
+    "CompanyID": "100001",
+    "CompanyName": "ABC Financials",
+    "Date": "2024-04-28",
+    "Debit_Credit": "Debit",
+    "Amount": "$5000.65",
+    "CompanyAccount": "1234567890",
+    "TransactionDescription": "Payment for Services",
+    "FinalBalance": "$757,793.28",
+    "TransactionID": "TID031",
+    "MerchantFirmName": "Valdez, Jones and Juarez",
+    "MerchantID": "MID021",
+    "Collateral": "a modern, five-story office building with large glass windows,  situated in an urban area"
+  }, 
+  {
+    "CompanyID": "100002",
+    "CompanyName": "XYZ Pharmaceuticals",
+    "Date": "2023-08-19",
+    "Debit_Credit": "Debit",
+    "Amount": "$2,949.75",
+    "CompanyAccount": "9876543210",
+    "TransactionDescription": "Product Purchase",
+    "FinalBalance": "$563,471.37",
+    "TransactionID": "TID032",
+    "MerchantFirmName": "Long, Dawson and Walsh",
+    "MerchantID": "MID022",
+    "Collateral": "a modern two-storey house with large glass windows, and a rectangular swimming pool"
+
+  },
+  {
+    "CompanyID": "100003",
+    "CompanyName": "PQR Automobile", 
+    "Date": "2024-04-08",
+    "Debit_Credit": "Credit",
+    "Amount": "$7,056.96",
+    "CompanyAccount": "2468013579",
+    "TransactionDescription": "Investment",
+    "FinalBalance": "$461,056.73",
+    "TransactionID": "TID033",
+    "MerchantFirmName": "Miranda, Wright and Duncan",
+    "MerchantID": "MID023",
+    "Collateral": "5 storey apartment building in Pashchim Vihar, New Delhi"
+  },
+  {
+    "CompanyID": "100004",
+    "CompanyName": "LMN Technologies",
+    "Date": "2024-04-29",
+    "Debit_Credit": "Debit",
+    "Amount": "$3,612.95",
+    "CompanyAccount": "1357924680",
+    "TransactionDescription": "Asset Acquisition",
+    "FinalBalance": "$101,970.96",
+    "TransactionID": "TID034",
+    "MerchantFirmName": "Foster-Chen",
+    "MerchantID": "MID024",
+    "Collateral": "2024 MG Hector Plus with 500 miles"
+  },
+  {
+    "CompanyID": "100005",
+    "CompanyName": "DEF Manufacturing",
+    "Date": "2024-04-22",
+    "Debit_Credit": "Credit",
+    "Amount": "$2,794.21",
+    "CompanyAccount": "8642097531",
+    "TransactionDescription": "Loan Repayment",
+    "FinalBalance": "$666,054.70",
+    "TransactionID": "TID035",
+    "MerchantFirmName": "Kim LLC",
+    "MerchantID": "MID025",
+    "Collateral": "10 acre farmland in Mysore, Karnataka"
+  }
+]
