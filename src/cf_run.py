@@ -152,6 +152,101 @@ async def process_files(blob_list, containername):
             audio_transcript_list.append(content)
     return document_text_list, image_list, text_list, audio_transcript_list
 
+def categorize_fraud(analysis):
+    openaiclient = gpt4oinit()
+    
+    sop = """
+    Standard Operating Procedure (SOP) for Fraud Detection and Categorization
+
+    1. Identity Fraud:
+       - Definition: Unauthorized use of personal or business information for financial gain.
+       - Key Indicators:
+         a) Discrepancies in personal or business identification details
+         b) Multiple accounts with similar details but different names
+         c) Sudden changes in account holder information
+       - Action Steps:
+         1) Verify all identification documents
+         2) Cross-reference with external databases
+         3) Conduct enhanced due diligence on suspicious accounts
+
+    2. Tax Fraud:
+       - Definition: Intentional evasion of tax obligations or false tax claims.
+       - Key Indicators:
+         a) Inconsistencies between reported income and observed financial activity
+         b) Large, unexplained deductions or credits
+         c) Discrepancies in tax filings across different periods
+       - Action Steps:
+         1) Analyze tax returns and financial statements for anomalies
+         2) Compare reported income with third-party information
+         3) Investigate any substantial tax refunds or credits
+
+    3. Transaction Fraud:
+       - Definition: Unauthorized or deceptive financial transactions.
+       - Key Indicators:
+         a) Unusual patterns in transaction timing, frequency, or amounts
+         b) Transactions with high-risk or sanctioned entities
+         c) Circular transactions or unexplained fund movements
+       - Action Steps:
+         1) Implement real-time transaction monitoring
+         2) Analyze transaction patterns for anomalies
+         3) Investigate any high-risk or suspicious transactions immediately
+
+    4. Operations Fraud:
+       - Definition: Manipulation of business operations for fraudulent gains.
+       - Key Indicators:
+         a) Discrepancies between reported business activities and financial flows
+         b) Unusual patterns in inventory, procurement, or sales data
+         c) Inconsistencies in operational metrics and financial outcomes
+       - Action Steps:
+         1) Conduct regular audits of business operations
+         2) Analyze operational data for inconsistencies
+         3) Investigate any significant deviations from expected operational patterns
+
+    5. Credit Fraud:
+       - Definition: Obtaining credit through false pretenses or misuse of credit facilities.
+       - Key Indicators:
+         a) Rapid increase in credit utilization
+         b) Discrepancies between reported income and credit behavior
+         c) Unusual patterns in repayment behavior
+       - Action Steps:
+         1) Regularly review credit reports and utilization patterns
+         2) Verify income and asset information for large credit requests
+         3) Monitor repayment behavior for sudden changes or defaults
+
+    General Guidelines:
+    - Maintain strict confidentiality throughout the investigation process
+    - Document all findings meticulously
+    - Escalate confirmed fraud cases to the appropriate authorities
+    - Regularly update fraud detection models and procedures based on new trends and patterns
+    """
+
+    categorization_prompt = f"""
+    Based on the following fraud analysis and the provided Standard Operating Procedure (SOP), 
+    categorize the potential fraud into one or more of these categories: 
+    Identity Fraud, Tax Fraud, Transaction Fraud, Operations Fraud, or Credit Fraud.
+
+    Provide a detailed explanation for each category you select, referencing specific points 
+    from the analysis and how they align with the SOP guidelines.
+
+    Analysis:
+    {analysis}
+
+    SOP:
+    {sop}
+
+    Your response should be structured as follows:
+    1. Primary Fraud Category: [Category Name]
+       Explanation: [Detailed justification]
+    2. Secondary Fraud Category (if applicable): [Category Name]
+       Explanation: [Detailed justification]
+    3. Other Potential Categories: [List any other categories that might apply]
+       Explanation: [Brief justification for each]
+    4. Recommended Next Steps: [Based on the SOP, what actions should be taken next]
+    """
+
+    categorization = gpt4oresponse(openaiclient, categorization_prompt, [], [], 2000, "fraud detection expert")
+    return categorization
+
 def process_data(query):
     content = get_embedding(query, "CompanyID_Vector", client)
     
@@ -243,9 +338,14 @@ def process_data(query):
 
     overall_analysis = gpt4oresponse(openaiclient, overall_analysis_prompt, [], [], 3000, "fraud detection expert")
 
+    # Add fraud categorization
+    fraud_categorization = categorize_fraud(overall_analysis)
+
     # Combine all analyses into the final response
     final_response = f"""Overall Analysis:
     {overall_analysis}
+Fraud Categorization:
+    {fraud_categorization}
 
     Detailed Company Data:
     {json.dumps(company_data, indent=2)}
@@ -265,7 +365,6 @@ def process_data(query):
     Note: The call recording analysis is a critical component in assessing potential fraudulent behavior by the company."""
     
     return final_response
-
 if query and not st.session_state.processing_complete:
     st.write(f"Your query is: {query}")
     
