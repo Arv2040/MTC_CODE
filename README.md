@@ -10,7 +10,7 @@ It leverages cutting-edge technologies like Generative AI and Retrieval Augmente
 **GPT-4o** with its multimodal capabilities plays a vital role in both our use cases to present a state-of-the-art solution which is able to determine creditworthiness and cases of corporate fraud at the click of a button with raw media files as inputs along with the regular structured data. 
 (ex. FORM 16, images of pledged collaterals, call logs, emails)
 
-<img width="861" alt="Screenshot 2024-07-09 at 6 36 21 PM" src="https://github.com/Arv2040/MTC_CODE/assets/34931141/05a795bf-7b38-4c08-853d-2031c2f37ef7">
+<img width="809" alt="Screenshot 2024-07-22 at 1 17 05 PM" src="https://github.com/user-attachments/assets/a8331bcf-4deb-49ba-9feb-9a4462986277">
 
 The system also leverages the capabilities of LangChain to maintain a conversational interface in the form of a **Copilot** which keeps context of previous queries and can be used to repeatedly reason on top of the report which the system has originally generated.
 
