@@ -46,7 +46,7 @@ else:
         text_bool = st.button("CHAT WITH COPILOT")
 
         if text_bool:
-            query = company_id
+            query = company_name
 
 if query and not st.session_state.processing_complete:
     st.write(f"Your query is: {query}")
