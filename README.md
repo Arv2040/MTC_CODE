@@ -75,7 +75,9 @@ To execute the frontend module for Creditworthiness, run the following command:
 ```
 streamlit run cw_run.py
 ```
+
 To execute the frontend module for Fraud Detection, run the following command:
 ```
-streamlit run cf_run.py
+streamlit run app.py
+streamlit run temp.py
 ```
