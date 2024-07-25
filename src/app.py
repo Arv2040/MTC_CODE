@@ -1,9 +1,8 @@
-# app.py (Flask Backend)
-
 import os
 import asyncio
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect
+from flask_swagger_ui import get_swaggerui_blueprint
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents.indexes import SearchIndexClient
 from azure.search.documents import SearchClient
@@ -49,6 +48,21 @@ conversation = ConversationChain(
     memory=memory,
     verbose=True
 )
+
+# Swagger UI setup
+SWAGGER_URL = '/swagger'
+API_URL = '/static/swagger.json'  # URL for exposing Swagger documentation
+
+swaggerui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL,
+    API_URL,
+    config={
+        'app_name': "Fraud Detection API"
+    }
+)
+
+app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+
 
 async def process_file(blob, containername):
     if '.jpg' in blob.name or '.jpeg' in blob.name or '.png' in blob.name:
@@ -205,7 +219,7 @@ def categorize_fraud(analysis):
     4. Recommended Next Steps: [Based on the SOP, what actions should be taken next]
     """
 
-    categorization = gpt4oresponse(openaiclient, categorization_prompt, [], [], 2000, "fraud detection expert")
+    categorization = gpt4oresponse(openaiclient, categorization_prompt, [], [], 2000, "fraud detection expert", "en")
     return categorization
 
 def process_data(query):
@@ -252,10 +266,10 @@ def process_data(query):
 
     # Process images separately if needed
     openaiclient = gpt4oinit()
-    image_analysis = gpt4oresponse(openaiclient, "Analyze these images for potential fraud indicators and validate against the company data", image_list, [json.dumps(company_data)], 2000, "fraud detection expert")
+    image_analysis = gpt4oresponse(openaiclient, "Analyze these images for potential fraud indicators and validate against the company data", image_list, [json.dumps(company_data)], 2000, "fraud detection expert", "en")
 
     # Process text data
-    text_analysis = gpt4oresponse(openaiclient, "Analyze this text data for potential fraud indicators and validate against the company data", [], text_list + [json.dumps(company_data)], 2000, "fraud detection expert")
+    text_analysis = gpt4oresponse(openaiclient, "Analyze this text data for potential fraud indicators and validate against the company data", [], text_list + [json.dumps(company_data)], 2000, "fraud detection expert", "en")
 
     # Process audio transcripts
     audio_analysis_prompt = f"""
@@ -272,7 +286,7 @@ def process_data(query):
     Company Data for reference: {json.dumps(company_data, indent=2)}
     """
 
-    audio_analysis = gpt4oresponse(openaiclient, audio_analysis_prompt, [], audio_transcript_list, 2000, "fraud detection expert")
+    audio_analysis = gpt4oresponse(openaiclient, audio_analysis_prompt, [], audio_transcript_list, 2000, "fraud detection expert", "en")
 
     # Generate overall analysis
     overall_analysis_prompt = f"""
@@ -296,7 +310,7 @@ def process_data(query):
     Provide your analysis in a clear, structured format.
     """
 
-    overall_analysis = gpt4oresponse(openaiclient, overall_analysis_prompt, [], [], 3000, "fraud detection expert")
+    overall_analysis = gpt4oresponse(openaiclient, overall_analysis_prompt, [], [], 3000, "fraud detection expert", "en")
 
     # Add fraud categorization
     fraud_categorization = categorize_fraud(overall_analysis)
@@ -326,6 +340,7 @@ def process_data(query):
     
     return final_response
 
+
 @app.route('/process', methods=['POST'])
 def process():
     data = request.json
@@ -342,8 +357,9 @@ def follow_up():
     data = request.json
     question = data.get('question')
     company_data = data.get('company_data')
-    if not question or not company_data:
-        return jsonify({"error": "Missing question or company data"}), 400
+    
+    if not question:
+        return jsonify({"error": "Missing question"}), 400
 
     context = f"""
     Based on the previous analysis and the following company data:
@@ -354,6 +370,10 @@ def follow_up():
     """
     response = conversation.predict(input=context)
     return jsonify({"response": response})
+
+@app.route('/')
+def index():
+    return redirect('/swagger')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
