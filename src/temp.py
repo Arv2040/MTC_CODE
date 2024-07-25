@@ -75,8 +75,6 @@ with st.form(key='new_follow_up_form'):
                 st.session_state.chat_history.append(("AI", follow_up_response))
                 st.session_state.follow_up_questions.append(new_follow_up)
                 st.experimental_rerun()
-            else:
-                st.error("Error processing follow-up question")
 
 # Display all follow-up questions and their responses
 for i, question in enumerate(st.session_state.follow_up_questions):
