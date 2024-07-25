@@ -5,7 +5,7 @@ import requests
 import json
 
 st.set_page_config(layout="wide")
-st.header("CREDISHIELD: THE FRAUD DETECTION COPILOT")
+st.header("CREDISHIELD: YOUR FRAUD DETECTION COPILOT")
 
 # Initialize session state
 if 'initial_response' not in st.session_state:
@@ -21,6 +21,14 @@ if 'follow_up_questions' not in st.session_state:
 
 col1, col2 = st.columns(2)
 
+company_data = {
+    "ABC Financials": "100001",
+    "XYZ Pharmaceuticals": "100002",
+    "PQR Automobiles": "100003",
+    "LMN Technologies": "100004",
+    "DEF Manufacturing": "100005"
+}
+
 with col1:
     speech_bool = st.button("TALK TO COPILOT")
 
@@ -33,8 +41,8 @@ if speech_bool:
     query = st.text_input("Speech input (placeholder):", key="speech_input")
 else:
     with col2:
-        st.write("CompanyID:", end=" ")
-        company_id = st.selectbox("", options=["100001", "100002", "100003", "100004", "100005"], label_visibility="collapsed")
+        st.write("Company:", end=" ")
+        company_name = st.selectbox("", options=list(company_data.keys()),label_visibility="collapsed")
         text_bool = st.button("CHAT WITH COPILOT")
 
         if text_bool:
