@@ -10,6 +10,8 @@ langchain
 langchain-community 
 python-dotenv
 langchain-openai
+Flask
+Flask-Swagger-UI
 
 #to activate the venv environment, run this if you are using Windows Powershell:
 #.venv\Scripts\Activate.ps1
