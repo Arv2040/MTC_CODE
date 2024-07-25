@@ -18,7 +18,7 @@ Multilingual and Voice inputs are also key features of the system which distingu
 
 ## Standard Operating Procedure (SOP) for Fraud Detection and Categorization
 
-1. Identity Falsification:
+     1. Identity Falsification:
        - Definition: Unauthorized use of personal or business information for financial gain.
        - Key Indicators:
          a) Discrepancies in personal or business identification details
@@ -26,7 +26,7 @@ Multilingual and Voice inputs are also key features of the system which distingu
          c) Sudden changes in account holder information
        
 
-3. Tax Compliance Violation:
+     2. Tax Compliance Violation:
        - Definition: Intentional evasion of tax obligations or false tax claims.
        - Key Indicators:
          a) Inconsistencies between reported income and observed financial activity
@@ -34,21 +34,21 @@ Multilingual and Voice inputs are also key features of the system which distingu
          c) Discrepancies in tax filings across different periods
        
 
-4. Transaction Misappropriation:
+     3. Transaction Misappropriation:
        - Definition: Unauthorized or deceptive financial transactions.
        - Key Indicators:
          a) Unusual patterns in transaction timing, frequency, or amounts
          b) Transactions with high-risk or sanctioned entities
          c) Circular transactions or unexplained fund movements
        
-5. Business Process Manipulation:
+     4. Business Process Manipulation:
        - Definition: Manipulation of business operations for fraudulent gains.
        - Key Indicators:
          a) Discrepancies between reported business activities and financial flows
          b) Unusual patterns in inventory, procurement, or sales data
          c) Inconsistencies in operational metrics and financial outcomes
        
-6. Financial Misrepresentation:
+     5. Financial Misrepresentation:
        - Definition: Obtaining credit through false pretenses or misuse of credit facilities.
        - Key Indicators:
          a) Rapid increase in credit utilization
