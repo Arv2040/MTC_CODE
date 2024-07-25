@@ -74,6 +74,10 @@ if st.session_state.conversation is None:
         verbose=True
     )
 
+# Add language selection
+languages = ["English", "Spanish", "French", "German", "Chinese", "Japanese", "Arabic"]
+selected_language = st.selectbox("Select Language", languages)
+
 with col1:
     speech_bool = st.button("TALK TO COPILOT")
 
@@ -152,7 +156,7 @@ async def process_files(blob_list, containername):
             audio_transcript_list.append(content)
     return document_text_list, image_list, text_list, audio_transcript_list
 
-def categorize_fraud(analysis):
+def categorize_fraud(analysis, language):
     openaiclient = gpt4oinit()
     
     sop = """
@@ -221,6 +225,7 @@ def categorize_fraud(analysis):
     """
 
     categorization_prompt = f"""
+    Respond in {language}.
     Based on the following fraud analysis and the provided Standard Operating Procedure (SOP), 
     categorize the potential fraud into one or more of these categories: 
     Identity Fraud, Tax Fraud, Transaction Fraud, Operations Fraud, or Credit Fraud.
@@ -244,10 +249,10 @@ def categorize_fraud(analysis):
     4. Recommended Next Steps: [Based on the SOP, what actions should be taken next]
     """
 
-    categorization = gpt4oresponse(openaiclient, categorization_prompt, [], [], 2000, "fraud detection expert")
+    categorization = gpt4oresponse(openaiclient, categorization_prompt, [], [], 2000, "fraud detection expert", language)
     return categorization
 
-def process_data(query):
+def process_data(query, language):
     content = get_embedding(query, "CompanyID_Vector", client)
     
     select = [
@@ -292,13 +297,14 @@ def process_data(query):
 
     # Process images separately if needed
     openaiclient = gpt4oinit()
-    image_analysis = gpt4oresponse(openaiclient, "Analyze these images for potential fraud indicators and validate against the company data", image_list, [json.dumps(company_data)], 2000, "fraud detection expert")
+    image_analysis = gpt4oresponse(openaiclient, "Analyze these images for potential fraud indicators and validate against the company data", image_list, [json.dumps(company_data)], 2000, "fraud detection expert", language)
 
     # Process text data
-    text_analysis = gpt4oresponse(openaiclient, "Analyze this text data for potential fraud indicators and validate against the company data", [], text_list + [json.dumps(company_data)], 2000, "fraud detection expert")
+    text_analysis = gpt4oresponse(openaiclient, "Analyze this text data for potential fraud indicators and validate against the company data", [], text_list + [json.dumps(company_data)], 2000, "fraud detection expert", language)
 
     # Process audio transcripts
     audio_analysis_prompt = f"""
+    Respond in {language}.
     Analyze these call recordings (transcripts provided) in the context of potential fraudulent behavior by the company (CompanyID: {company_data['CompanyID']}).
     Consider the following:
     1. Does the company representative make any suspicious claims or offers?
@@ -312,10 +318,11 @@ def process_data(query):
     Company Data for reference: {json.dumps(company_data, indent=2)}
     """
 
-    audio_analysis = gpt4oresponse(openaiclient, audio_analysis_prompt, [], audio_transcript_list, 2000, "fraud detection expert")
+    audio_analysis = gpt4oresponse(openaiclient, audio_analysis_prompt, [], audio_transcript_list, 2000, "fraud detection expert", language)
 
     # Generate overall analysis
     overall_analysis_prompt = f"""
+    Respond in {language}.
     As a fraud detection expert, provide a comprehensive analysis based on the following information:
 
     1. Company Data: {json.dumps(company_data, indent=2)}
@@ -336,10 +343,10 @@ def process_data(query):
     Provide your analysis in a clear, structured format.
     """
 
-    overall_analysis = gpt4oresponse(openaiclient, overall_analysis_prompt, [], [], 3000, "fraud detection expert")
+    overall_analysis = gpt4oresponse(openaiclient, overall_analysis_prompt, [], [], 3000, "fraud detection expert", language)
 
     # Add fraud categorization
-    fraud_categorization = categorize_fraud(overall_analysis)
+    fraud_categorization = categorize_fraud(overall_analysis, language)
 
     # Combine all analyses into the final response
     final_response = f"""Overall Analysis:
@@ -370,7 +377,7 @@ if query and not st.session_state.processing_complete:
     
     with st.spinner("Processing..."):
         # Process data
-        st.session_state.initial_response = process_data(query)
+        st.session_state.initial_response = process_data(query, selected_language)
         st.session_state.processing_complete = True
 
     # Add the initial interaction to Langchain memory

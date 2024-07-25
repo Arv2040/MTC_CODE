@@ -10,7 +10,9 @@ def gpt4oinit():
         azure_endpoint=os.getenv("azure_endpoint")
     )
     
-def gpt4oresponse(client,prompt,images,text, max_tokens,skill):
+def gpt4oresponse(client,prompt,images,text, max_tokens,skill,language):
+    language_prompt = f"Respond in {language}. "
+    full_prompt = language_prompt + prompt
     messages=[
         {"role": "system", "content": f"You are a helpful {skill}."},
         {"role": "user", "content": [
