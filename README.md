@@ -16,6 +16,45 @@ The system also leverages the capabilities of LangChain to maintain a conversati
 
 Multilingual and Voice inputs are also key features of the system which distinguish it from other mainstream solutions.
 
+## Standard Operating Procedure (SOP) for Fraud Detection and Categorization
+
+    1. Identity Falsification:
+       - Definition: Unauthorized use of personal or business information for financial gain.
+       - Key Indicators:
+         a) Discrepancies in personal or business identification details
+         b) Multiple accounts with similar details but different names
+         c) Sudden changes in account holder information
+       
+
+    2. Tax Compliance Violation:
+       - Definition: Intentional evasion of tax obligations or false tax claims.
+       - Key Indicators:
+         a) Inconsistencies between reported income and observed financial activity
+         b) Large, unexplained deductions or credits
+         c) Discrepancies in tax filings across different periods
+       
+
+    3. Transaction Misappropriation:
+       - Definition: Unauthorized or deceptive financial transactions.
+       - Key Indicators:
+         a) Unusual patterns in transaction timing, frequency, or amounts
+         b) Transactions with high-risk or sanctioned entities
+         c) Circular transactions or unexplained fund movements
+       
+    4. Business Process Manipulation:
+       - Definition: Manipulation of business operations for fraudulent gains.
+       - Key Indicators:
+         a) Discrepancies between reported business activities and financial flows
+         b) Unusual patterns in inventory, procurement, or sales data
+         c) Inconsistencies in operational metrics and financial outcomes
+       
+    5. Financial Misrepresentation:
+       - Definition: Obtaining credit through false pretenses or misuse of credit facilities.
+       - Key Indicators:
+         a) Rapid increase in credit utilization
+         b) Discrepancies between reported income and credit behavior
+         c) Unusual patterns in repayment behavior
+
 ## To run the code on your system
 
 Clone this repository into your IDE.
