@@ -78,6 +78,14 @@ if st.session_state.conversation is None:
 languages = ["English", "Spanish", "French", "German", "Chinese", "Japanese", "Arabic"]
 selected_language = st.selectbox("Select Language", languages)
 
+company_data = {
+    "ABC Financials": "100001",
+    "XYZ Pharmaceuticals": "100002",
+    "PQR Automobiles": "100003",
+    "LMN Technologies": "100004",
+    "DEF Manufacturing": "100005"
+}
+
 with col1:
     speech_bool = st.button("TALK TO COPILOT")
 
@@ -89,11 +97,11 @@ if speech_bool:
 else:
     with col2:
         st.write("CompanyID:", end=" ")
-        company_id = st.selectbox("", options=["100001", "100002", "100003", "100004", "100005"], label_visibility="collapsed")
+        company_name = st.selectbox("", options=list(company_data.keys()),label_visibility="collapsed")
         text_bool = st.button("CHAT WITH COPILOT")
 
         if text_bool:
-            query = company_id
+            query = company_name
 
 async def process_file(blob, containername):
     if '.jpg' in blob.name or '.jpeg' in blob.name or '.png' in blob.name:
