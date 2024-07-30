@@ -63,13 +63,6 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
-COMPANY_MAP = {
-    "ABC Financials": "100001",
-    "XYZ Pharmaceuticals": "100002",
-    "PQR Automobiles": "100003",
-    "LMN Technologies": "100004",
-    "DEF Manufacturing": "100005"
-}
 
 async def process_file(blob, containername):
     if '.jpg' in blob.name or '.jpeg' in blob.name or '.png' in blob.name:
@@ -96,6 +89,11 @@ async def process_file(blob, containername):
             speech_recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config, audio_config=audio_config)
             
             result = await asyncio.to_thread(speech_recognizer.recognize_once_async().get)
+            
+            print("REACHED HERE")
+            # Remove the temporary file
+            #if os.path.exists(temp_audio_path):
+            #   os.remove(temp_audio_path)
             
             if result.reason == speechsdk.ResultReason.RecognizedSpeech:
                 return ('audio', result.text)
@@ -216,217 +214,176 @@ def categorize_fraud(analysis):
        Explanation: [Detailed justification]
     2. Secondary Fraud Category (if applicable): [Category Name]
        Explanation: [Detailed justification]
-    3. Other Potential Categories: [List of categories]
-       Explanation: [Brief justification]
+    3. Other Potential Categories: [List any other categories that might apply]
+       Explanation: [Brief justification for each]
+    4. Recommended Next Steps: [Based on the SOP, what actions should be taken next]
     """
+
+    categorization = gpt4oresponse(openaiclient, categorization_prompt, [], [], 2000, "fraud detection expert", "en")
+    return categorization
+
+def process_data(query):
+    content = get_embedding(query, "CompanyID_Vector", client)
     
+    select = [
+        "CompanyID", "CompanyName", "Date", "Debit_Credit", "Amount",
+        "CompanyAccount", "TransactionDescription", "FinalBalance",
+        "TransactionID", "MerchantFirmName", "MerchantID", "Collateral"
+    ]
+
+    results = search_client.search(
+        search_text=None,
+        vector_queries=[content],
+        select=select,
+    )
+    
+    result = next(results)
+    
+    # Create a dictionary with all selected fields
+    company_data = {field: result.get(field) for field in select}
+    
+    containername = result['CompanyID']
+    blob_list = getbloblist(containername)
+    
+    document_text_list, image_list, text_list, audio_transcript_list = asyncio.run(process_files(blob_list, containername))
+    
+    # Create a text splitter
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=5000,
+        chunk_overlap=100,
+        length_function=len,
+    )
+
+    # Split the documents
+    docs = [Document(page_content=text) for text in document_text_list]
+    split_docs = text_splitter.split_documents(docs)
+
+    # Initialize the summarization chain
+    chain = load_summarize_chain(llm, chain_type="map_reduce")
+
+    # Process chunks and summarize
+    document_summary = chain.run(split_docs)
+
+    # Process images separately if needed
     openaiclient = gpt4oinit()
-    category_response = gpt4oresponse(openaiclient, categorization_prompt)
-    return category_response
+    image_analysis = gpt4oresponse(openaiclient, "Analyze these images for potential fraud indicators and validate against the company data", image_list, [json.dumps(company_data)], 2000, "fraud detection expert", "en")
 
-@app.route('/process_blob_files', methods=['POST'])
-async def process_blob_files():
+    # Process text data
+    text_analysis = gpt4oresponse(openaiclient, "Analyze this text data for potential fraud indicators and validate against the company data", [], text_list + [json.dumps(company_data)], 2000, "fraud detection expert", "en")
+
+    # Process audio transcripts
+    audio_analysis_prompt = f"""
+    Analyze these call recordings (transcripts provided) in the context of potential fraudulent behavior by the company (CompanyID: {company_data['CompanyID']}).
+    Consider the following:
+    1. Does the company representative make any suspicious claims or offers?
+    2. Are there any inconsistencies between what's said in the calls and the company's official data?
+    3. Are there any high-pressure sales tactics or attempts to mislead customers?
+    4. Is there any mention of practices that could be considered unethical or illegal?
+    5. Do the call recordings provide any evidence that supports or contradicts the company's reported financial activities?
+
+    Provide a detailed analysis focusing on how these call recordings might indicate fraudulent behavior by the company, not the caller.
+
+    Company Data for reference: {json.dumps(company_data, indent=2)}
+    """
+
+    audio_analysis = gpt4oresponse(openaiclient, audio_analysis_prompt, [], audio_transcript_list, 2000, "fraud detection expert", "en")
+
+    # Generate overall analysis
+    overall_analysis_prompt = f"""
+    As a fraud detection expert, provide a comprehensive analysis based on the following information:
+
+    1. Company Data: {json.dumps(company_data, indent=2)}
+    2. Document Summary: {document_summary}
+    3. Image Analysis: {image_analysis}
+    4. Text Analysis: {text_analysis}
+    5. Audio Analysis (Call Recordings): {audio_analysis}
+
+    Please include:
+    1. A summary of the key points from the company data
+    2. Validation of the company data against the information found in documents, images, and especially the call recordings
+    3. Identification of any discrepancies or potential fraud indicators, with particular attention to evidence from the call recordings
+    4. An overall risk assessment, considering all sources of information but weighing heavily on the call recording analysis
+    5. Recommendations for further investigation, if necessary
+
+    Remember, the call recordings should be treated as a potentially critical piece of evidence in determining if the company is engaging in fraudulent activities.
+
+    Provide your analysis in a clear, structured format.
+    """
+
+    overall_analysis = gpt4oresponse(openaiclient, overall_analysis_prompt, [], [], 3000, "fraud detection expert", "en")
+
+    # Add fraud categorization
+    fraud_categorization = categorize_fraud(overall_analysis)
+
+    # Combine all analyses into the final response
+    final_response = f"""Overall Analysis:
+    {overall_analysis}
+    Fraud Categorization:
+    {fraud_categorization}
+
+    Detailed Company Data:
+    {json.dumps(company_data, indent=2)}
+
+    Document Summary:
+    {document_summary}
+
+    Image Analysis:
+    {image_analysis}
+
+    Text Analysis:
+    {text_analysis}
+
+    Call Recording Analysis:
+    {audio_analysis}
+
+    Note: The call recording analysis is a critical component in assessing potential fraudulent behavior by the company."""
+    
+    return final_response
+
+def extract_company_data(response):
+    start = response.find("Detailed Company Data:")
+    end = response.find("\n\n", start)
+    if start != -1 and end != -1:
+        company_data_str = response[start:end].split(":", 1)[1].strip()
+        try:
+            return json.loads(company_data_str)
+        except json.JSONDecodeError:
+            return {}
+    return
+
+@app.route('/process', methods=['POST'])
+def process():
     data = request.json
-    containername = data['containername']
-    companyname = data['companyname']
-    companyid = COMPANY_MAP.get(companyname, "Unknown")
+    global global_company_data
+    query = data.get('query')
+    if not query:
+        return jsonify({"error": "No query provided"}), 400
 
-    blob_list = await asyncio.to_thread(getbloblist, containername)
-    document_text_list, image_list, text_list, audio_transcript_list = await process_files(blob_list, containername)
-    
-    # Combine all text data
-    combined_text = "\n".join(document_text_list + text_list + audio_transcript_list)
-    
-    # Split text into manageable chunks
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-    texts = text_splitter.create_documents([combined_text])
+    response = process_data(query)
+    company_data = extract_company_data(response)
+    global_company_data = extract_company_data(response)
+    return jsonify({"response": response, "company_data": company_data})
 
-    # Process text with Langchain
-    summary_chain = load_summarize_chain(llm, chain_type="map_reduce")
-    summarized_output = summary_chain.run(texts)
+@app.route('/follow_up', methods=['POST'])
+def follow_up():
+    data = request.json
+    question = data.get('question')
+    company_data = global_company_data
+    if not question:
+        return jsonify({"error": "Missing question"}), 400
+    context = f"""
+    Based on the previous analysis and the following company data:
+    {json.dumps(company_data, indent=2)}
     
-    # Categorize the potential fraud
-    fraud_categories = categorize_fraud(summarized_output)
-    
-    return jsonify({
-        "companyname": companyname,
-        "companyid": companyid,
-        "document_text": document_text_list,
-        "image_list": image_list,
-        "text_list": text_list,
-        "audio_transcript_list": audio_transcript_list,
-        "summary": summarized_output,
-        "fraud_categories": fraud_categories
-    })
+    Please answer the following question:
+    {question}
+    """
+    response = conversation.predict(input=context)
+    return jsonify({"response": response})
 
 @app.route('/')
-def home():
+def index():
     return redirect('/swagger')
 
 if __name__ == '__main__':
-    app.run(debug=True)    
-# def process_data(query):
-#     content = get_embedding(query, "CompanyID_Vector", client)
-    
-#     select = [
-#         "CompanyID", "CompanyName", "Date", "Debit_Credit", "Amount",
-#         "CompanyAccount", "TransactionDescription", "FinalBalance",
-#         "TransactionID", "MerchantFirmName", "MerchantID", "Collateral"
-#     ]
-
-#     results = search_client.search(
-#         search_text=None,
-#         vector_queries=[content],
-#         select=select,
-#     )
-    
-#     result = next(results)
-    
-#     # Create a dictionary with all selected fields
-#     company_data = {field: result.get(field) for field in select}
-    
-#     containername = result['CompanyID']
-#     blob_list = getbloblist(containername)
-    
-#     document_text_list, image_list, text_list, audio_transcript_list = asyncio.run(process_files(blob_list, containername))
-    
-#     # Create a text splitter
-#     text_splitter = RecursiveCharacterTextSplitter(
-#         chunk_size=5000,
-#         chunk_overlap=100,
-#         length_function=len,
-#     )
-
-#     # Split the documents
-#     docs = [Document(page_content=text) for text in document_text_list]
-#     split_docs = text_splitter.split_documents(docs)
-
-#     # Initialize the summarization chain
-#     chain = load_summarize_chain(llm, chain_type="map_reduce")
-
-#     # Process chunks and summarize
-#     document_summary = chain.run(split_docs)
-
-#     # Process images separately if needed
-#     openaiclient = gpt4oinit()
-#     image_analysis = gpt4oresponse(openaiclient, "Analyze these images for potential fraud indicators and validate against the company data", image_list, [json.dumps(company_data)], 2000, "fraud detection expert", "en")
-
-#     # Process text data
-#     text_analysis = gpt4oresponse(openaiclient, "Analyze this text data for potential fraud indicators and validate against the company data", [], text_list + [json.dumps(company_data)], 2000, "fraud detection expert", "en")
-
-#     # Process audio transcripts
-#     audio_analysis_prompt = f"""
-#     Analyze these call recordings (transcripts provided) in the context of potential fraudulent behavior by the company (CompanyID: {company_data['CompanyID']}).
-#     Consider the following:
-#     1. Does the company representative make any suspicious claims or offers?
-#     2. Are there any inconsistencies between what's said in the calls and the company's official data?
-#     3. Are there any high-pressure sales tactics or attempts to mislead customers?
-#     4. Is there any mention of practices that could be considered unethical or illegal?
-#     5. Do the call recordings provide any evidence that supports or contradicts the company's reported financial activities?
-
-#     Provide a detailed analysis focusing on how these call recordings might indicate fraudulent behavior by the company, not the caller.
-
-#     Company Data for reference: {json.dumps(company_data, indent=2)}
-#     """
-
-#     audio_analysis = gpt4oresponse(openaiclient, audio_analysis_prompt, [], audio_transcript_list, 2000, "fraud detection expert", "en")
-
-#     # Generate overall analysis
-#     overall_analysis_prompt = f"""
-#     As a fraud detection expert, provide a comprehensive analysis based on the following information:
-
-#     1. Company Data: {json.dumps(company_data, indent=2)}
-#     2. Document Summary: {document_summary}
-#     3. Image Analysis: {image_analysis}
-#     4. Text Analysis: {text_analysis}
-#     5. Audio Analysis (Call Recordings): {audio_analysis}
-
-#     Please include:
-#     1. A summary of the key points from the company data
-#     2. Validation of the company data against the information found in documents, images, and especially the call recordings
-#     3. Identification of any discrepancies or potential fraud indicators, with particular attention to evidence from the call recordings
-#     4. An overall risk assessment, considering all sources of information but weighing heavily on the call recording analysis
-#     5. Recommendations for further investigation, if necessary
-
-#     Remember, the call recordings should be treated as a potentially critical piece of evidence in determining if the company is engaging in fraudulent activities.
-
-#     Provide your analysis in a clear, structured format.
-#     """
-
-#     overall_analysis = gpt4oresponse(openaiclient, overall_analysis_prompt, [], [], 3000, "fraud detection expert", "en")
-
-#     # Add fraud categorization
-#     fraud_categorization = categorize_fraud(overall_analysis)
-
-#     # Combine all analyses into the final response
-#     final_response = f"""Overall Analysis:
-#     {overall_analysis}
-#     Fraud Categorization:
-#     {fraud_categorization}
-
-#     Detailed Company Data:
-#     {json.dumps(company_data, indent=2)}
-
-#     Document Summary:
-#     {document_summary}
-
-#     Image Analysis:
-#     {image_analysis}
-
-#     Text Analysis:
-#     {text_analysis}
-
-#     Call Recording Analysis:
-#     {audio_analysis}
-
-#     Note: The call recording analysis is a critical component in assessing potential fraudulent behavior by the company."""
-    
-#     return final_response
-
-# def extract_company_data(response):
-#     start = response.find("Detailed Company Data:")
-#     end = response.find("\n\n", start)
-#     if start != -1 and end != -1:
-#         company_data_str = response[start:end].split(":", 1)[1].strip()
-#         try:
-#             return json.loads(company_data_str)
-#         except json.JSONDecodeError:
-#             return {}
-#     return
-
-# @app.route('/process', methods=['POST'])
-# def process():
-#     data = request.json
-#     global global_company_data
-#     query = data.get('query')
-#     if not query:
-#         return jsonify({"error": "No query provided"}), 400
-
-#     response = process_data(query)
-#     company_data = extract_company_data(response)
-#     global_company_data = extract_company_data(response)
-#     return jsonify({"response": response, "company_data": company_data})
-
-# @app.route('/follow_up', methods=['POST'])
-# def follow_up():
-#     data = request.json
-#     question = data.get('question')
-#     company_data = global_company_data
-#     if not question:
-#         return jsonify({"error": "Missing question"}), 400
-#     context = f"""
-#     Based on the previous analysis and the following company data:
-#     {json.dumps(company_data, indent=2)}
-    
-#     Please answer the following question:
-#     {question}
-#     """
-#     response = conversation.predict(input=context)
-#     return jsonify({"response": response})
-
-# @app.route('/')
-# def index():
-#     return redirect('/swagger')
-
-# if __name__ == '__main__':
-#     app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000)
