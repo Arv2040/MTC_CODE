@@ -23,6 +23,7 @@ import azure.cognitiveservices.speech as speechsdk
 import base64
 import json
 
+
 load_dotenv()
 document_client = DocumentAnalysisClient(os.getenv("doc_endpoint"), AzureKeyCredential(os.getenv("doc_apikey")))
 

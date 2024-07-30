@@ -20,10 +20,12 @@ from helpers.llm_helpers.gpt4o import gpt4oinit, gpt4oresponse
 import azure.cognitiveservices.speech as speechsdk
 import base64
 import json
+from flask_cors import CORS, cross_origin
 
 load_dotenv()
 
 app = Flask(__name__)
+CORS(app)
 
 # Initialize Azure clients and other necessary components
 document_client = DocumentAnalysisClient(os.getenv("doc_endpoint"), AzureKeyCredential(os.getenv("doc_apikey")))
@@ -352,6 +354,7 @@ def extract_company_data(response):
     return
 
 @app.route('/process', methods=['POST'])
+
 def process():
     data = request.json
     global global_company_data
@@ -386,4 +389,4 @@ def index():
     return redirect('/swagger')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='127.0.0.1', port=5000)
